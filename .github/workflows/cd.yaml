@@ -29,7 +29,8 @@ jobs:
 
       # Step 3: Initialize Terraform
       - name: Terraform Init
-        run: terraform -chdir=terraform init
+        run: cd terraform 
+             terraform init
 
       # Step 4: Validate Terraform config
       - name: Terraform Validate
