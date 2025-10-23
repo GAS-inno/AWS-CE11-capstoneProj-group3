@@ -29,18 +29,17 @@ jobs:
 
       # Step 3: Initialize Terraform
       - name: Terraform Init
-        run: cd terraform 
-             terraform init
+        run: cd terraform && terraform init
 
       # Step 4: Validate Terraform config
       - name: Terraform Validate
-        run: terraform -chdir=terraform validate
+        run: cd terraform && terraform Validate
 
       # Step 5: Plan Terraform changes
       - name: Terraform Plan
-        run: terraform -chdir=terraform plan -out=tfplan
+        run: cd terraform && terraform plan -out=tfplan
 
       # Step 6: Apply Terraform (only on main branch)
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
-        run: terraform -chdir=terraform apply -auto-approve tfplan
+        run: cd terraform && terraform apply -auto-approve tfplan
