@@ -23,3 +23,4 @@ resource "aws_iam_policy" "ec2_secrets_policy" {
     ]
   })
 }
+
