@@ -6,7 +6,7 @@ resource "aws_vpc" "main" {
   enable_dns_hostnames = true
 
   tags = {
-    Name = "saw-vpc"
+    Name = "ce11g3-vpc"
   }
 }
 
@@ -27,7 +27,7 @@ resource "aws_subnet" "public_1" {
   availability_zone       = "${var.region}a"
 
   tags = {
-    Name = "saw-public-subnet-1"
+    Name = "ce11g3-public-subnet-1"
   }
 }
 
@@ -38,7 +38,7 @@ resource "aws_subnet" "public_2" {
   availability_zone       = "${var.region}b"
 
   tags = {
-    Name = "saw-public-subnet-2"
+    Name = "ce11g3-public-subnet-2"
   }
 }
 
@@ -49,7 +49,7 @@ resource "aws_subnet" "private_1" {
   availability_zone = "${var.region}a"
 
   tags = {
-    Name = "saw-private-subnet-1"
+    Name = "ce11g3-private-subnet-1"
   }
 }
 
@@ -59,7 +59,7 @@ resource "aws_subnet" "private_2" {
   availability_zone = "${var.region}b"
 
   tags = {
-    Name = "saw-private-subnet-2"
+    Name = "ce11g3-private-subnet-2"
   }
 }
 
@@ -88,22 +88,83 @@ resource "aws_route_table_association" "public_2_assoc" {
 }
 
 
-# Private Route Table
-resource "aws_route_table" "private" {
-  vpc_id = aws_vpc.main.id
+# NAT Gateway for private subnets (needed for ECS tasks to reach ECR)
+resource "aws_eip" "nat_1" {
+  domain = "vpc"
+  
+  tags = {
+    Name = "ce11g3-nat-gateway-1-eip"
+  }
+
+  depends_on = [aws_internet_gateway.igw]
+}
+
+resource "aws_eip" "nat_2" {
+  domain = "vpc"
+  
+  tags = {
+    Name = "ce11g3-nat-gateway-2-eip"
+  }
+
+  depends_on = [aws_internet_gateway.igw]
+}
+
+resource "aws_nat_gateway" "nat_1" {
+  allocation_id = aws_eip.nat_1.id
+  subnet_id     = aws_subnet.public_1.id
 
   tags = {
-    Name = "ce11g3-private-rt"
+    Name = "ce11g3-nat-gateway-1"
+  }
+
+  depends_on = [aws_internet_gateway.igw]
+}
+
+resource "aws_nat_gateway" "nat_2" {
+  allocation_id = aws_eip.nat_2.id
+  subnet_id     = aws_subnet.public_2.id
+
+  tags = {
+    Name = "ce11g3-nat-gateway-2"
+  }
+
+  depends_on = [aws_internet_gateway.igw]
+}
+
+# Private Route Tables (separate for each AZ)
+resource "aws_route_table" "private_1" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_1.id
+  }
+
+  tags = {
+    Name = "ce11g3-private-rt-1"
+  }
+}
+
+resource "aws_route_table" "private_2" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_2.id
+  }
+
+  tags = {
+    Name = "ce11g3-private-rt-2"
   }
 }
 
 # Private Route Table Associations
 resource "aws_route_table_association" "private_1_assoc" {
   subnet_id      = aws_subnet.private_1.id
-  route_table_id = aws_route_table.private.id
+  route_table_id = aws_route_table.private_1.id
 }
 
 resource "aws_route_table_association" "private_2_assoc" {
   subnet_id      = aws_subnet.private_2.id
-  route_table_id = aws_route_table.private.id
+  route_table_id = aws_route_table.private_2.id
 }
