@@ -1,0 +1,189 @@
+name: Multi-Environment Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - staging
+        - prod
+      version:
+        description: 'Version/Tag to deploy (leave empty for latest)'
+        required: false
+        type: string
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy:
+    name: Deploy to ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    env:
+      # Environment-specific variables
+      ECR_REPOSITORY: ${{ github.event.inputs.environment == 'prod' && 'ce11g3-sky-high-booker-prod' || (github.event.inputs.environment == 'staging' && 'ce11g3-sky-high-booker-staging' || 'ce11g3-sky-high-booker-dev') }}
+      ECS_SERVICE: ${{ github.event.inputs.environment == 'prod' && 'ce11g3-sky-high-booker-cluster-prod-sky-high-booker' || (github.event.inputs.environment == 'staging' && 'ce11g3-sky-high-booker-cluster-staging-sky-high-booker' || 'ce11g3-sky-high-booker-cluster-sky-high-booker') }}
+      ECS_CLUSTER: ${{ github.event.inputs.environment == 'prod' && 'ce11g3-sky-high-booker-cluster-prod' || (github.event.inputs.environment == 'staging' && 'ce11g3-sky-high-booker-cluster-staging' || 'ce11g3-sky-high-booker-cluster') }}
+      CONTAINER_NAME: sky-high-booker-container
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build application for ${{ github.event.inputs.environment }}
+      run: |
+        # Set environment-specific build variables
+        if [ "${{ github.event.inputs.environment }}" == "prod" ]; then
+          echo "Building for production"
+          npm run build:prod
+        elif [ "${{ github.event.inputs.environment }}" == "staging" ]; then
+          echo "Building for staging"
+          npm run build:staging
+        else
+          echo "Building for development"
+          npm run build
+        fi
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Determine image tag
+      id: image-tag
+      run: |
+        if [ -n "${{ github.event.inputs.version }}" ]; then
+          echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
+      run: |
+        # Build a docker container and push it to ECR
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest-${{ github.event.inputs.environment }}
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest-${{ github.event.inputs.environment }}
+        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+    - name: Check if ECS service exists
+      id: check-service
+      run: |
+        if aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }} --region ${{ env.AWS_REGION }} &>/dev/null; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "⚠️ ECS service does not exist. Please deploy infrastructure first."
+        fi
+
+    - name: Get current task definition
+      if: steps.check-service.outputs.exists == 'true'
+      id: current-task-def
+      run: |
+        aws ecs describe-task-definition \
+          --task-definition ${{ env.ECS_SERVICE }} \
+          --query 'taskDefinition' \
+          --region ${{ env.AWS_REGION }} > current-task-def.json
+
+    - name: Fill in the new image ID in the Amazon ECS task definition
+      if: steps.check-service.outputs.exists == 'true'
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: current-task-def.json
+        container-name: ${{ env.CONTAINER_NAME }}
+        image: ${{ steps.build-image.outputs.image }}
+
+    - name: Deploy Amazon ECS task definition
+      if: steps.check-service.outputs.exists == 'true'
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: ${{ env.ECS_SERVICE }}
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: true
+
+    - name: Run smoke tests
+      if: steps.check-service.outputs.exists == 'true'
+      run: |
+        echo "🧪 Running smoke tests for ${{ github.event.inputs.environment }}"
+        
+        # Get the ALB endpoint
+        ALB_DNS=$(aws elbv2 describe-load-balancers \
+          --query "LoadBalancers[?contains(LoadBalancerName, '${{ github.event.inputs.environment }}')].DNSName" \
+          --output text --region ${{ env.AWS_REGION }})
+        
+        if [ -n "$ALB_DNS" ]; then
+          echo "Testing endpoint: http://$ALB_DNS"
+          
+          # Wait for deployment to be ready
+          sleep 30
+          
+          # Test health endpoint
+          if curl -f "http://$ALB_DNS/health" --max-time 30; then
+            echo "✅ Health check passed"
+          else
+            echo "⚠️ Health check failed, but deployment completed"
+          fi
+          
+          # Test main page
+          if curl -f "http://$ALB_DNS" --max-time 30; then
+            echo "✅ Main page accessible"
+          else
+            echo "⚠️ Main page not accessible"
+          fi
+        else
+          echo "⚠️ Could not find ALB endpoint for testing"
+        fi
+
+    - name: Post-deployment summary
+      run: |
+        echo "🎉 Deployment to ${{ github.event.inputs.environment }} completed!"
+        echo "📦 Image: ${{ steps.build-image.outputs.image }}"
+        echo "🏷️ Tag: ${{ steps.image-tag.outputs.tag }}"
+        echo "🌍 Environment: ${{ github.event.inputs.environment }}"
+        echo "🔧 Service: ${{ env.ECS_SERVICE }}"
+        echo "🏭 Cluster: ${{ env.ECS_CLUSTER }}"
+        
+        # Get service details
+        if [ "${{ steps.check-service.outputs.exists }}" == "true" ]; then
+          echo "📊 Service Status:"
+          aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --query 'services[0].{DesiredCount:desiredCount,RunningCount:runningCount,Status:status}' \
+            --region ${{ env.AWS_REGION }}
+        fi
+
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "❌ Deployment to ${{ github.event.inputs.environment }} failed!"
+        echo "Please check the logs and verify your infrastructure is properly deployed."

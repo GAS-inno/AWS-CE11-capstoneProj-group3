@@ -1,23 +1,35 @@
-name: Terraform Deploy
+name: Legacy CD Pipeline (Deprecated)
+# This file is deprecated - use deploy.yml or deploy-multi-env.yml instead
 
 on:
-  push:
-    branches:
-      - main
+  # Disabled to prevent conflicts with new workflows
   workflow_dispatch:
+    inputs:
+      confirm_legacy:
+        description: 'Type "confirm" to use this deprecated workflow'
+        required: true
+        type: string
 
 permissions:
   contents: read
   id-token: write
 
 jobs:
-  deploy:
+  check-legacy:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Terraform
+      - name: Validate legacy usage
+        run: |
+          if [ "${{ github.event.inputs.confirm_legacy }}" != "confirm" ]; then
+            echo "❌ This workflow is deprecated."
+            echo "✅ Use 'deploy.yml' for main deployments"
+            echo "✅ Use 'deploy-multi-env.yml' for environment-specific deployments"
+            echo "✅ Use 'terraform.yml' for infrastructure management"
+            exit 1
+          fi
+          echo "⚠️ Using deprecated workflow. Please migrate to new workflows."
+      
+      - name: Setup Terraform (Legacy)
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.6
