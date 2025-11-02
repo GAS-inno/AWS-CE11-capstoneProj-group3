@@ -219,19 +219,19 @@ output "app_s3_bucket_name" {
 output "dynamodb_tables" {
   description = "DynamoDB table names"
   value = {
-    flights   = aws_dynamodb_table.flights.name
-    bookings  = aws_dynamodb_table.bookings.name
-    payments  = aws_dynamodb_table.payments.name
+    flights  = aws_dynamodb_table.flights.name
+    bookings = aws_dynamodb_table.bookings.name
+    payments = aws_dynamodb_table.payments.name
   }
 }
 
 output "aws_environment_variables" {
   description = "Environment variables for AWS services"
   value = {
-    VITE_AWS_REGION                = data.aws_region.current.name
-    VITE_AWS_USER_POOL_ID         = aws_cognito_user_pool.user_pool.id
-    VITE_AWS_USER_POOL_CLIENT_ID  = aws_cognito_user_pool_client.user_pool_client.id
-    VITE_AWS_API_GATEWAY_URL      = "https://${aws_api_gateway_rest_api.booking_api.id}.execute-api.${data.aws_region.current.name}.amazonaws.com/prod"
+    VITE_AWS_REGION              = data.aws_region.current.name
+    VITE_AWS_USER_POOL_ID        = aws_cognito_user_pool.user_pool.id
+    VITE_AWS_USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.user_pool_client.id
+    VITE_AWS_API_GATEWAY_URL     = "https://${aws_api_gateway_rest_api.booking_api.id}.execute-api.${data.aws_region.current.name}.amazonaws.com/prod"
     VITE_AWS_S3_BUCKET           = aws_s3_bucket.app_storage.id
   }
 }

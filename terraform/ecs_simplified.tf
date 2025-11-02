@@ -12,7 +12,7 @@ data "aws_subnets" "default" {
     name   = "vpc-id"
     values = [data.aws_vpc.default.id]
   }
-  
+
   filter {
     name   = "default-for-az"
     values = ["true"]
@@ -49,7 +49,7 @@ module "ecs" {
   }
 
   services = {
-    sky-high-booker = {  # Service name
+    sky-high-booker = { # Service name
       cpu    = 512
       memory = 1024
 
@@ -57,8 +57,8 @@ module "ecs" {
       container_definitions = {
         sky-high-booker-container = {
           essential = true
-          image     = "nginx:alpine"  # Use a simple image for initial deployment
-          
+          image     = "nginx:alpine" # Use a simple image for initial deployment
+
           port_mappings = [
             {
               containerPort = 80
@@ -82,8 +82,8 @@ module "ecs" {
       }
 
       # Network configuration
-      assign_public_ip = true
-      subnet_ids      = data.aws_subnets.default.ids
+      assign_public_ip   = true
+      subnet_ids         = data.aws_subnets.default.ids
       security_group_ids = [module.ecs_sg.security_group_id]
 
       # Load balancer configuration
@@ -122,7 +122,7 @@ resource "aws_lb" "main" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [module.alb_sg.security_group_id]
-  subnets           = data.aws_subnets.default.ids
+  subnets            = data.aws_subnets.default.ids
 
   enable_deletion_protection = false
 
@@ -147,10 +147,10 @@ module "alb_sg" {
 
 # Target Group for ECS service
 resource "aws_lb_target_group" "ecs" {
-  name     = "${local.prefix}-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = data.aws_vpc.default.id
+  name        = "${local.prefix}-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = data.aws_vpc.default.id
   target_type = "ip"
 
   health_check {

@@ -27,13 +27,13 @@ resource "aws_dynamodb_table" "terraform_lock" {
 
 # Flights Table
 resource "aws_dynamodb_table" "flights" {
-  name           = "${var.project_name}-flights"
-  billing_mode   = "PAY_PER_REQUEST"  # Serverless billing
-  hash_key       = "id"
+  name         = "${var.project_name}-flights"
+  billing_mode = "PAY_PER_REQUEST" # Serverless billing
+  hash_key     = "id"
 
   attribute {
     name = "id"
-    type = "S"  # String
+    type = "S" # String
   }
 
   # Global Secondary Index for searching by route
@@ -72,9 +72,9 @@ resource "aws_dynamodb_table" "flights" {
 
 # Bookings Table
 resource "aws_dynamodb_table" "bookings" {
-  name           = "${var.project_name}-bookings"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "id"
+  name         = "${var.project_name}-bookings"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
 
   attribute {
     name = "id"
@@ -117,9 +117,9 @@ resource "aws_dynamodb_table" "bookings" {
 
 # Payments Table
 resource "aws_dynamodb_table" "payments" {
-  name           = "${var.project_name}-payments"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "id"
+  name         = "${var.project_name}-payments"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
 
   attribute {
     name = "id"

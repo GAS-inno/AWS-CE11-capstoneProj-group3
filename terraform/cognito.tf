@@ -4,35 +4,35 @@ resource "aws_cognito_user_pool" "user_pool" {
 
   # Allow users to sign in with email
   username_attributes = ["email"]
-  
+
   # User attributes
   schema {
     attribute_data_type = "String"
-    name               = "email"
-    required           = true
-    mutable           = true
+    name                = "email"
+    required            = true
+    mutable             = true
   }
 
   schema {
     attribute_data_type = "String"
-    name               = "given_name"
-    required           = true
-    mutable           = true
+    name                = "given_name"
+    required            = true
+    mutable             = true
   }
 
   schema {
     attribute_data_type = "String"
-    name               = "family_name"
-    required           = true
-    mutable           = true
+    name                = "family_name"
+    required            = true
+    mutable             = true
   }
 
   # Custom attribute for user role
   schema {
     attribute_data_type = "String"
-    name               = "role"
-    required           = false
-    mutable           = true
+    name                = "role"
+    required            = false
+    mutable             = true
   }
 
   # Password policy
@@ -72,18 +72,18 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
 
   # App client settings
   generate_secret = false
-  
+
   # Allow OAuth flows
   allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_flows = ["code", "implicit"]
-  allowed_oauth_scopes = ["email", "openid", "profile"]
-  
+  allowed_oauth_flows                  = ["code", "implicit"]
+  allowed_oauth_scopes                 = ["email", "openid", "profile"]
+
   # Callback URLs (update with your domain)
   callback_urls = [
     "http://localhost:5173/auth/callback",
     "https://sky-high-booker.example.com/auth/callback"
   ]
-  
+
   logout_urls = [
     "http://localhost:5173",
     "https://sky-high-booker.example.com"
@@ -97,13 +97,13 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
   ]
 
   # Token validity
-  access_token_validity  = 1   # 1 hour
-  id_token_validity     = 1   # 1 hour
-  refresh_token_validity = 30  # 30 days
+  access_token_validity  = 1  # 1 hour
+  id_token_validity      = 1  # 1 hour
+  refresh_token_validity = 30 # 30 days
 
   token_validity_units {
     access_token  = "hours"
-    id_token     = "hours"
+    id_token      = "hours"
     refresh_token = "days"
   }
 }

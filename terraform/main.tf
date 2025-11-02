@@ -2,7 +2,7 @@
 # Based on jaezeu/ecs-deployment reference
 
 locals {
-  prefix = "sky-high-booker-dev"  # Simplified prefix like the reference
+  prefix = "sky-high-booker-dev" # Simplified prefix like the reference
 
   # Tags for AWS resources
   tags = {

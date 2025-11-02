@@ -46,7 +46,7 @@ resource "aws_s3_bucket_cors_configuration" "app_storage" {
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["GET", "PUT", "POST", "DELETE", "HEAD"]
-    allowed_origins = ["*"]  # Update with your domain in production
+    allowed_origins = ["*"] # Update with your domain in production
     expose_headers  = ["ETag"]
     max_age_seconds = 3000
   }
