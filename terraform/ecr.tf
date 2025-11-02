@@ -12,7 +12,7 @@ locals {
 resource "aws_ecr_repository" "sky_high_booker" {
   name                 = "${var.name_prefix}sky-high-booker"
   image_tag_mutability = "MUTABLE"
-  force_delete        = true
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
@@ -37,9 +37,9 @@ resource "aws_ecr_lifecycle_policy" "sky_high_booker" {
         rulePriority = 1
         description  = "Keep last 10 tagged images"
         selection = {
-          tagStatus     = "tagged"
-          countType     = "imageCountMoreThan"
-          countNumber   = 10
+          tagStatus   = "tagged"
+          countType   = "imageCountMoreThan"
+          countNumber = 10
         }
         action = {
           type = "expire"

@@ -15,8 +15,11 @@ if [ -d "$JS_FILES_PATH" ]; then
     for file in $JS_FILES_PATH/*.js; do
         if [ -f "$file" ]; then
             # Replace placeholder environment variables with actual values
-            sed -i "s|VITE_SUPABASE_URL_PLACEHOLDER|${VITE_SUPABASE_URL:-}|g" "$file"
-            sed -i "s|VITE_SUPABASE_ANON_KEY_PLACEHOLDER|${VITE_SUPABASE_ANON_KEY:-}|g" "$file"
+            sed -i "s|VITE_AWS_REGION_PLACEHOLDER|${VITE_AWS_REGION:-us-east-1}|g" "$file"
+            sed -i "s|VITE_AWS_USER_POOL_ID_PLACEHOLDER|${VITE_AWS_USER_POOL_ID:-}|g" "$file"
+            sed -i "s|VITE_AWS_USER_POOL_CLIENT_ID_PLACEHOLDER|${VITE_AWS_USER_POOL_CLIENT_ID:-}|g" "$file"
+            sed -i "s|VITE_AWS_API_GATEWAY_URL_PLACEHOLDER|${VITE_AWS_API_GATEWAY_URL:-}|g" "$file"
+            sed -i "s|VITE_AWS_S3_BUCKET_PLACEHOLDER|${VITE_AWS_S3_BUCKET:-}|g" "$file"
         fi
     done
 fi

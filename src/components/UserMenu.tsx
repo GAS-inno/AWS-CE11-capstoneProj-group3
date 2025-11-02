@@ -1,6 +1,6 @@
-import { User, LogOut, Ticket } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { User, LogOut, Ticket } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,10 +8,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { toast } from 'sonner';
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 export const UserMenu = () => {
   const { user, signOut } = useAuth();
@@ -19,22 +19,19 @@ export const UserMenu = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    toast.success('Signed out successfully');
-    navigate('/');
+    toast.success("Signed out successfully");
+    navigate("/");
   };
 
   if (!user) {
     return (
-      <Button variant="default" onClick={() => navigate('/auth')}>
+      <Button variant="default" onClick={() => navigate("/auth")}>
         Sign In
       </Button>
     );
   }
 
-  const initials = user.email
-    ?.split('@')[0]
-    .slice(0, 2)
-    .toUpperCase() || 'U';
+  const initials = user.email?.split("@")[0].slice(0, 2).toUpperCase() || "U";
 
   return (
     <DropdownMenu>
@@ -57,11 +54,11 @@ export const UserMenu = () => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => navigate('/my-bookings')}>
+        <DropdownMenuItem onClick={() => navigate("/my-bookings")}>
           <Ticket className="mr-2 h-4 w-4" />
           <span>My Bookings</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate('/profile')}>
+        <DropdownMenuItem onClick={() => navigate("/profile")}>
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>

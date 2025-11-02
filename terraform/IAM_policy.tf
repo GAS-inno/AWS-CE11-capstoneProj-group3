@@ -12,7 +12,7 @@ resource "aws_iam_policy" "ecs_secrets_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Action   = [ "secretsmanager:GetSecretValue"]
+        Action   = ["secretsmanager:GetSecretValue"]
         Effect   = "Allow"
         Resource = "*"
       }

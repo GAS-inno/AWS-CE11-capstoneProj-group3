@@ -30,16 +30,16 @@ variable "private_subnet_2_cidr" {
 }
 
 variable "name_prefix" {
-   type = string
-   description = "name of app"
-   default = "ce11g3-"
+  type        = string
+  description = "name of app"
+  default     = "ce11g3-"
 }
 
 
 variable "state_bucket_name" {
   description = "Name of S3 bucket for Terraform state"
   type        = string
-  default     = "ce11-g3-tf-state-bucket"  # CHANGE THIS to a unique name
+  default     = "ce11-g3-tf-state-bucket" # CHANGE THIS to a unique name
 }
 
 variable "dynamodb_table_name" {
@@ -48,10 +48,19 @@ variable "dynamodb_table_name" {
   default     = "ce11g3-tf-state-lock"
 }
 
+# DynamoDB variables (tables are created with project_name prefix)
+# No additional configuration needed - DynamoDB is serverless
+
 variable "environment" {
   description = "Environment name"
   type        = string
   default     = "dev"
+}
+
+variable "project_name" {
+  description = "Name of the project"
+  type        = string
+  default     = "sky-high-booker"
 }
 
 variable "supabase_url" {

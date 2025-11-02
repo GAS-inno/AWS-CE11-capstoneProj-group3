@@ -26,7 +26,8 @@ const Payment = () => {
   const returnSeats = searchParams.get("returnSeats") || "";
   const addOns = searchParams.get("addOns") || "";
 
-  const totalPrice = basePrice + returnPrice + seatPrice + returnSeatPrice + addOnsPrice;
+  const totalPrice =
+    basePrice + returnPrice + seatPrice + returnSeatPrice + addOnsPrice;
 
   const [formData, setFormData] = useState({
     cardName: "",
@@ -39,13 +40,19 @@ const Payment = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
+
     let formattedValue = value;
-    
+
     if (name === "cardNumber") {
-      formattedValue = value.replace(/\s/g, "").replace(/(\d{4})/g, "$1 ").trim();
+      formattedValue = value
+        .replace(/\s/g, "")
+        .replace(/(\d{4})/g, "$1 ")
+        .trim();
     } else if (name === "expiryDate") {
-      formattedValue = value.replace(/\D/g, "").replace(/(\d{2})(\d)/, "$1/$2").slice(0, 5);
+      formattedValue = value
+        .replace(/\D/g, "")
+        .replace(/(\d{2})(\d)/, "$1/$2")
+        .slice(0, 5);
     } else if (name === "cvv") {
       formattedValue = value.replace(/\D/g, "").slice(0, 3);
     }
@@ -55,20 +62,26 @@ const Payment = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.cardName || !formData.cardNumber || !formData.expiryDate || !formData.cvv || !formData.email) {
+
+    if (
+      !formData.cardName ||
+      !formData.cardNumber ||
+      !formData.expiryDate ||
+      !formData.cvv ||
+      !formData.email
+    ) {
       toast.error("Please fill in all required fields");
       return;
     }
 
     setIsProcessing(true);
-    
+
     // Simulate payment processing
     setTimeout(() => {
       setIsProcessing(false);
       toast.success("Payment successful!");
       const params = new URLSearchParams(searchParams);
-      params.set('totalPrice', totalPrice.toString());
+      params.set("totalPrice", totalPrice.toString());
       navigate(`/confirmation?${params.toString()}`);
     }, 2000);
   };
@@ -87,7 +100,9 @@ const Payment = () => {
                 <h1 className="text-2xl font-bold">Payment</h1>
               </div>
             </div>
-            <div className="text-sm text-muted-foreground">Flight {flightNumber}</div>
+            <div className="text-sm text-muted-foreground">
+              Flight {flightNumber}
+            </div>
           </div>
         </div>
       </header>
@@ -196,8 +211,8 @@ const Payment = () => {
                     <div>
                       <h4 className="font-semibold text-sm">Secure Payment</h4>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Your payment information is encrypted and secure. We never
-                        store your card details.
+                        Your payment information is encrypted and secure. We
+                        never store your card details.
                       </p>
                     </div>
                   </div>
@@ -216,16 +231,22 @@ const Payment = () => {
                   <div className="text-sm text-muted-foreground">Flight</div>
                   <div className="font-medium">{flightNumber}</div>
                   {isRoundTrip && (
-                    <div className="font-medium text-sm mt-1">{returnFlightNumber}</div>
+                    <div className="font-medium text-sm mt-1">
+                      {returnFlightNumber}
+                    </div>
                   )}
                 </div>
 
                 <div>
-                  <div className="text-sm text-muted-foreground">Selected Seats</div>
+                  <div className="text-sm text-muted-foreground">
+                    Selected Seats
+                  </div>
                   <div className="font-medium">
                     <div>Outbound: {seats || "None"}</div>
                     {isRoundTrip && (
-                      <div className="text-sm mt-1">Return: {returnSeats || "None"}</div>
+                      <div className="text-sm mt-1">
+                        Return: {returnSeats || "None"}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -233,23 +254,35 @@ const Payment = () => {
                 <div className="border-t pt-4 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Base Fare</span>
-                    <span>{currency.symbol}{isRoundTrip ? basePrice + returnPrice : basePrice}</span>
+                    <span>
+                      {currency.symbol}
+                      {isRoundTrip ? basePrice + returnPrice : basePrice}
+                    </span>
                   </div>
-                  {(seatPrice + returnSeatPrice) > 0 && (
+                  {seatPrice + returnSeatPrice > 0 && (
                     <div className="flex justify-between text-sm">
                       <span>Seat Selection</span>
-                      <span>{currency.symbol}{seatPrice + returnSeatPrice}</span>
+                      <span>
+                        {currency.symbol}
+                        {seatPrice + returnSeatPrice}
+                      </span>
                     </div>
                   )}
                   {addOnsPrice > 0 && (
                     <div className="flex justify-between text-sm">
                       <span>Add-ons</span>
-                      <span>{currency.symbol}{addOnsPrice}</span>
+                      <span>
+                        {currency.symbol}
+                        {addOnsPrice}
+                      </span>
                     </div>
                   )}
                   <div className="flex justify-between font-bold text-lg pt-2 border-t">
                     <span>Total</span>
-                    <span className="text-primary">{currency.symbol}{totalPrice}</span>
+                    <span className="text-primary">
+                      {currency.symbol}
+                      {totalPrice}
+                    </span>
                   </div>
                 </div>
 
@@ -259,11 +292,14 @@ const Payment = () => {
                   onClick={handleSubmit}
                   disabled={isProcessing}
                 >
-                  {isProcessing ? "Processing..." : `Pay ${currency.symbol}${totalPrice}`}
+                  {isProcessing
+                    ? "Processing..."
+                    : `Pay ${currency.symbol}${totalPrice}`}
                 </Button>
 
                 <p className="text-xs text-muted-foreground text-center">
-                  By completing this purchase, you agree to our Terms & Conditions
+                  By completing this purchase, you agree to our Terms &
+                  Conditions
                 </p>
               </CardContent>
             </Card>

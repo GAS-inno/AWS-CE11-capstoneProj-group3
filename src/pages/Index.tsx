@@ -375,30 +375,33 @@ const Index = () => {
     tripType: "one-way" | "round-trip";
   } | null>(null);
 
-  const [selectedOutbound, setSelectedOutbound] = useState<typeof mockFlights[0] | null>(null);
+  const [selectedOutbound, setSelectedOutbound] = useState<
+    (typeof mockFlights)[0] | null
+  >(null);
 
   const outboundFlights = searchParams
     ? mockFlights.filter(
         (flight) =>
           flight.departure.airport === searchParams.from &&
-          flight.arrival.airport === searchParams.to
+          flight.arrival.airport === searchParams.to,
       )
     : [];
 
-  const returnFlights = searchParams?.tripType === "round-trip"
-    ? mockFlights.filter(
-        (flight) =>
-          flight.departure.airport === searchParams.to &&
-          flight.arrival.airport === searchParams.from
-      )
-    : [];
+  const returnFlights =
+    searchParams?.tripType === "round-trip"
+      ? mockFlights.filter(
+          (flight) =>
+            flight.departure.airport === searchParams.to &&
+            flight.arrival.airport === searchParams.from,
+        )
+      : [];
 
   const handleSearch = (params: typeof searchParams) => {
     setSearchParams(params);
     setSelectedOutbound(null);
   };
 
-  const handleOutboundSelect = (flight: typeof mockFlights[0]) => {
+  const handleOutboundSelect = (flight: (typeof mockFlights)[0]) => {
     setSelectedOutbound(flight);
   };
 
@@ -418,7 +421,7 @@ const Index = () => {
             <CurrencySelector />
             <UserMenu />
           </div>
-          
+
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-2 mb-4">
               <Plane className="w-10 h-10 text-primary" />
@@ -450,65 +453,70 @@ const Index = () => {
             <>
               {/* Outbound Flights */}
               <div className="mb-12">
-            <h2 className="text-3xl font-bold mb-8">
-              {searchParams
-                ? `${searchParams.tripType === "round-trip" && !selectedOutbound ? "Select Outbound Flight: " : ""}${searchParams.from} to ${searchParams.to}`
-                : "Available Flights"}
-            </h2>
-            <div className="space-y-4">
-              {outboundFlights.length > 0 ? (
-                outboundFlights.map((flight, index) => (
-                  <FlightCard 
-                    key={index} 
-                    {...flight} 
-                    passengers={searchParams?.passengers || "1"}
-                    departureDate={searchParams?.departDate || ""}
-                    onSelectOverride={searchParams?.tripType === "round-trip" ? () => handleOutboundSelect(flight) : undefined}
-                  />
-                ))
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-xl text-muted-foreground mb-2">
-                    No flights found for this route
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Try searching for a different route or date
-                  </p>
-                </div>
-              )}
-              </div>
-            </div>
-
-            {/* Return Flights */}
-            {searchParams?.tripType === "round-trip" && selectedOutbound && (
-              <div id="return-flights">
                 <h2 className="text-3xl font-bold mb-8">
-                  Select Return Flight: {searchParams.to} to {searchParams.from}
+                  {searchParams
+                    ? `${searchParams.tripType === "round-trip" && !selectedOutbound ? "Select Outbound Flight: " : ""}${searchParams.from} to ${searchParams.to}`
+                    : "Available Flights"}
                 </h2>
                 <div className="space-y-4">
-                  {returnFlights.length > 0 ? (
-                    returnFlights.map((flight, index) => (
-                      <FlightCard 
-                        key={index} 
-                        {...flight} 
+                  {outboundFlights.length > 0 ? (
+                    outboundFlights.map((flight, index) => (
+                      <FlightCard
+                        key={index}
+                        {...flight}
                         passengers={searchParams?.passengers || "1"}
-                        departureDate={searchParams?.returnDate || ""}
-                        outboundFlight={selectedOutbound}
-                        outboundDepartureDate={searchParams?.departDate || ""}
+                        departureDate={searchParams?.departDate || ""}
+                        onSelectOverride={
+                          searchParams?.tripType === "round-trip"
+                            ? () => handleOutboundSelect(flight)
+                            : undefined
+                        }
                       />
                     ))
                   ) : (
                     <div className="text-center py-12">
                       <p className="text-xl text-muted-foreground mb-2">
-                        No return flights found
+                        No flights found for this route
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Try searching for a different route or date
                       </p>
                     </div>
                   )}
                 </div>
               </div>
-            )}
-          </>
-        )}
+
+              {/* Return Flights */}
+              {searchParams?.tripType === "round-trip" && selectedOutbound && (
+                <div id="return-flights">
+                  <h2 className="text-3xl font-bold mb-8">
+                    Select Return Flight: {searchParams.to} to{" "}
+                    {searchParams.from}
+                  </h2>
+                  <div className="space-y-4">
+                    {returnFlights.length > 0 ? (
+                      returnFlights.map((flight, index) => (
+                        <FlightCard
+                          key={index}
+                          {...flight}
+                          passengers={searchParams?.passengers || "1"}
+                          departureDate={searchParams?.returnDate || ""}
+                          outboundFlight={selectedOutbound}
+                          outboundDepartureDate={searchParams?.departDate || ""}
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center py-12">
+                        <p className="text-xl text-muted-foreground mb-2">
+                          No return flights found
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </section>
 

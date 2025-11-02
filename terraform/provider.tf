@@ -15,7 +15,14 @@ provider "aws" {
 # Terraform configuration
 terraform {
   required_version = ">= 1.0.0" # Specify a suitable version constraint
-  
+
+  # S3 Backend for state storage
+  backend "s3" {
+    bucket = "sctp-ce11-tfstate"
+    key    = "sky-high-booker/terraform.tfstate"
+    region = "us-east-1"
+  }
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"

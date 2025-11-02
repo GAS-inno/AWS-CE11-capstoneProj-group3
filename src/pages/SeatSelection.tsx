@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,31 +16,35 @@ const SeatSelection = () => {
   const [searchParams] = useSearchParams();
   const [outboundSeats, setOutboundSeats] = useState<string[]>([]);
   const [returnSeats, setReturnSeats] = useState<string[]>([]);
-  const [selectingLeg, setSelectingLeg] = useState<"outbound" | "return">("outbound");
+  const [selectingLeg, setSelectingLeg] = useState<"outbound" | "return">(
+    "outbound",
+  );
   const [occupiedSeats, setOccupiedSeats] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const { currency } = useCurrency();
-  
+
   const flightNumber = searchParams.get("flight") || "SW 1234";
   const returnFlightNumber = searchParams.get("returnFlight");
   const isRoundTrip = !!returnFlightNumber;
   const price = searchParams.get("price") || "289";
   const returnPrice = searchParams.get("returnPrice") || "0";
   const maxPassengers = parseInt(searchParams.get("passengers") || "1");
-  const outboundDepartureDate = searchParams.get("outboundDepartureDate") || searchParams.get("departureDate") || "";
+  const outboundDepartureDate =
+    searchParams.get("outboundDepartureDate") ||
+    searchParams.get("departureDate") ||
+    "";
   const returnDepartureDate = searchParams.get("returnDepartureDate") || "";
-  
-  const currentFlight = selectingLeg === "outbound" ? flightNumber : returnFlightNumber;
-  const currentDate = selectingLeg === "outbound" ? outboundDepartureDate : returnDepartureDate;
-  const selectedSeats = selectingLeg === "outbound" ? outboundSeats : returnSeats;
-  const setSelectedSeats = selectingLeg === "outbound" ? setOutboundSeats : setReturnSeats;
 
-  // Fetch occupied seats for the current flight and date
-  useEffect(() => {
-    fetchOccupiedSeats();
-  }, [currentFlight, currentDate, selectingLeg]);
+  const currentFlight =
+    selectingLeg === "outbound" ? flightNumber : returnFlightNumber;
+  const currentDate =
+    selectingLeg === "outbound" ? outboundDepartureDate : returnDepartureDate;
+  const selectedSeats =
+    selectingLeg === "outbound" ? outboundSeats : returnSeats;
+  const setSelectedSeats =
+    selectingLeg === "outbound" ? setOutboundSeats : setReturnSeats;
 
-  const fetchOccupiedSeats = async () => {
+  const fetchOccupiedSeats = useCallback(async () => {
     if (!currentFlight || !currentDate) {
       setLoading(false);
       return;
@@ -49,23 +53,28 @@ const SeatSelection = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('bookings')
-        .select('seats')
-        .eq('flight_number', currentFlight)
-        .eq('departure_date', currentDate);
+        .from("bookings")
+        .select("seats")
+        .eq("flight_number", currentFlight)
+        .eq("departure_date", currentDate);
 
       if (error) throw error;
 
       // Flatten all seat arrays into a single array of occupied seats
-      const allOccupiedSeats = data?.flatMap(booking => booking.seats) || [];
+      const allOccupiedSeats = data?.flatMap((booking) => booking.seats) || [];
       setOccupiedSeats(allOccupiedSeats);
     } catch (error) {
-      console.error('Error fetching occupied seats:', error);
-      toast.error('Could not load seat availability');
+      console.error("Error fetching occupied seats:", error);
+      toast.error("Could not load seat availability");
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentFlight, currentDate]);
+
+  // Fetch occupied seats for the current flight and date
+  useEffect(() => {
+    fetchOccupiedSeats();
+  }, [fetchOccupiedSeats, selectingLeg]);
 
   const getSeatLabel = (rowIndex: number, seatIndex: number): string => {
     const row = rowIndex + 1;
@@ -73,8 +82,10 @@ const SeatSelection = () => {
     return `${row}${seatLetter}`;
   };
 
-  const isSeatOccupied = (seatLabel: string) => occupiedSeats.includes(seatLabel);
-  const isSeatSelected = (seatLabel: string) => selectedSeats.includes(seatLabel);
+  const isSeatOccupied = (seatLabel: string) =>
+    occupiedSeats.includes(seatLabel);
+  const isSeatSelected = (seatLabel: string) =>
+    selectedSeats.includes(seatLabel);
 
   const handleSeatClick = (seatLabel: string) => {
     if (isSeatOccupied(seatLabel)) return;
@@ -83,7 +94,9 @@ const SeatSelection = () => {
       setSelectedSeats(selectedSeats.filter((s) => s !== seatLabel));
     } else {
       if (selectedSeats.length >= maxPassengers) {
-        toast.error(`You can only select ${maxPassengers} seat${maxPassengers > 1 ? 's' : ''} for ${maxPassengers} passenger${maxPassengers > 1 ? 's' : ''}`);
+        toast.error(
+          `You can only select ${maxPassengers} seat${maxPassengers > 1 ? "s" : ""} for ${maxPassengers} passenger${maxPassengers > 1 ? "s" : ""}`,
+        );
         return;
       }
       setSelectedSeats([...selectedSeats, seatLabel]);
@@ -107,36 +120,40 @@ const SeatSelection = () => {
       return;
     }
     if (selectedSeats.length !== maxPassengers) {
-      toast.error(`Please select exactly ${maxPassengers} seat${maxPassengers > 1 ? 's' : ''} for ${maxPassengers} passenger${maxPassengers > 1 ? 's' : ''}`);
+      toast.error(
+        `Please select exactly ${maxPassengers} seat${maxPassengers > 1 ? "s" : ""} for ${maxPassengers} passenger${maxPassengers > 1 ? "s" : ""}`,
+      );
       return;
     }
-    
+
     // If round trip and still on outbound, switch to return
     if (isRoundTrip && selectingLeg === "outbound") {
       setSelectingLeg("return");
       setLoading(true); // Will trigger useEffect to fetch return flight seats
       toast.success("Outbound seats selected! Now select return seats.");
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    
+
     // Calculate total seat prices
     const outboundSeatPrice = outboundSeats.reduce((total, seat) => {
       const rowIndex = parseInt(seat.slice(0, -1)) - 1;
       return total + getSeatPrice(rowIndex);
     }, 0);
-    
-    const returnSeatPrice = isRoundTrip ? returnSeats.reduce((total, seat) => {
-      const rowIndex = parseInt(seat.slice(0, -1)) - 1;
-      return total + getSeatPrice(rowIndex);
-    }, 0) : 0;
-    
+
+    const returnSeatPrice = isRoundTrip
+      ? returnSeats.reduce((total, seat) => {
+          const rowIndex = parseInt(seat.slice(0, -1)) - 1;
+          return total + getSeatPrice(rowIndex);
+        }, 0)
+      : 0;
+
     const params = new URLSearchParams(searchParams);
-    params.set('seats', outboundSeats.join(','));
-    params.set('seatPrice', outboundSeatPrice.toString());
+    params.set("seats", outboundSeats.join(","));
+    params.set("seatPrice", outboundSeatPrice.toString());
     if (isRoundTrip) {
-      params.set('returnSeats', returnSeats.join(','));
-      params.set('returnSeatPrice', returnSeatPrice.toString());
+      params.set("returnSeats", returnSeats.join(","));
+      params.set("returnSeatPrice", returnSeatPrice.toString());
     }
     navigate(`/add-ons?${params.toString()}`);
   };
@@ -158,13 +175,17 @@ const SeatSelection = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => {
-                if (isRoundTrip && selectingLeg === "return") {
-                  setSelectingLeg("outbound");
-                } else {
-                  navigate("/");
-                }
-              }}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  if (isRoundTrip && selectingLeg === "return") {
+                    setSelectingLeg("outbound");
+                  } else {
+                    navigate("/");
+                  }
+                }}
+              >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div className="flex items-center gap-2">
@@ -173,13 +194,18 @@ const SeatSelection = () => {
                   <h1 className="text-2xl font-bold">Select Your Seats</h1>
                   {isRoundTrip && (
                     <p className="text-sm text-muted-foreground">
-                      {selectingLeg === "outbound" ? "Outbound Flight" : "Return Flight"} - Step {selectingLeg === "outbound" ? "1" : "2"} of 2
+                      {selectingLeg === "outbound"
+                        ? "Outbound Flight"
+                        : "Return Flight"}{" "}
+                      - Step {selectingLeg === "outbound" ? "1" : "2"} of 2
                     </p>
                   )}
                 </div>
               </div>
             </div>
-            <div className="text-sm text-muted-foreground">Flight {currentFlight}</div>
+            <div className="text-sm text-muted-foreground">
+              Flight {currentFlight}
+            </div>
           </div>
         </div>
       </header>
@@ -190,7 +216,9 @@ const SeatSelection = () => {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {isRoundTrip && selectingLeg === "return" ? "Choose Return Seats" : "Choose Your Seats"}
+                  {isRoundTrip && selectingLeg === "return"
+                    ? "Choose Return Seats"
+                    : "Choose Your Seats"}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground mt-2">
                   {isRoundTrip && (
@@ -198,7 +226,8 @@ const SeatSelection = () => {
                       {selectingLeg === "outbound" ? "Outbound: " : "Return: "}
                     </span>
                   )}
-                  Select {maxPassengers} seat{maxPassengers > 1 ? 's' : ''} for {maxPassengers} passenger{maxPassengers > 1 ? 's' : ''}
+                  Select {maxPassengers} seat{maxPassengers > 1 ? "s" : ""} for{" "}
+                  {maxPassengers} passenger{maxPassengers > 1 ? "s" : ""}
                 </p>
                 <div className="flex gap-6 mt-4 text-sm">
                   <div className="flex items-center gap-2">
@@ -232,34 +261,39 @@ const SeatSelection = () => {
                           {rowIndex + 1}
                         </div>
                         <div className="flex gap-2 flex-1 justify-center">
-                          {Array.from({ length: SEATS_PER_ROW }).map((_, seatIndex) => {
-                            const seatLabel = getSeatLabel(rowIndex, seatIndex);
-                            const occupied = isSeatOccupied(seatLabel);
-                            const selected = isSeatSelected(seatLabel);
-                            const seatPrice = getSeatPrice(rowIndex);
+                          {Array.from({ length: SEATS_PER_ROW }).map(
+                            (_, seatIndex) => {
+                              const seatLabel = getSeatLabel(
+                                rowIndex,
+                                seatIndex,
+                              );
+                              const occupied = isSeatOccupied(seatLabel);
+                              const selected = isSeatSelected(seatLabel);
+                              const seatPrice = getSeatPrice(rowIndex);
 
-                            return (
-                              <div key={seatIndex} className="flex gap-2">
-                                <button
-                                  onClick={() => handleSeatClick(seatLabel)}
-                                  disabled={occupied}
-                                  className={`w-8 h-8 rounded text-xs font-medium transition-all ${
-                                    occupied
-                                      ? "bg-muted-foreground/20 cursor-not-allowed"
-                                      : selected
-                                      ? "bg-primary text-primary-foreground"
-                                      : "bg-muted border hover:border-primary hover:scale-110"
-                                   } ${seatPrice > 0 ? "ring-1 ring-accent/30" : ""}`}
-                                  title={`${seatLabel}${seatPrice > 0 ? ` (+${currency.symbol}${seatPrice})` : ""}`}
-                                >
-                                  {seatLabel.slice(-1)}
-                                </button>
-                                {seatIndex === AISLE_AFTER - 1 && (
-                                  <div className="w-4" />
-                                )}
-                              </div>
-                            );
-                          })}
+                              return (
+                                <div key={seatIndex} className="flex gap-2">
+                                  <button
+                                    onClick={() => handleSeatClick(seatLabel)}
+                                    disabled={occupied}
+                                    className={`w-8 h-8 rounded text-xs font-medium transition-all ${
+                                      occupied
+                                        ? "bg-muted-foreground/20 cursor-not-allowed"
+                                        : selected
+                                          ? "bg-primary text-primary-foreground"
+                                          : "bg-muted border hover:border-primary hover:scale-110"
+                                    } ${seatPrice > 0 ? "ring-1 ring-accent/30" : ""}`}
+                                    title={`${seatLabel}${seatPrice > 0 ? ` (+${currency.symbol}${seatPrice})` : ""}`}
+                                  >
+                                    {seatLabel.slice(-1)}
+                                  </button>
+                                  {seatIndex === AISLE_AFTER - 1 && (
+                                    <div className="w-4" />
+                                  )}
+                                </div>
+                              );
+                            },
+                          )}
                         </div>
                       </div>
                     ))}
@@ -273,7 +307,9 @@ const SeatSelection = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded ring-1 ring-accent/30 bg-muted" />
-                      <span>Rows 6-10: Extra Legroom (+{currency.symbol}30)</span>
+                      <span>
+                        Rows 6-10: Extra Legroom (+{currency.symbol}30)
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded bg-muted" />
@@ -293,42 +329,69 @@ const SeatSelection = () => {
               <CardContent className="space-y-4">
                 {isRoundTrip ? (
                   <>
-                    <div className={selectingLeg === "outbound" ? "" : "opacity-50"}>
-                      <div className="text-sm text-muted-foreground">Outbound Flight</div>
+                    <div
+                      className={
+                        selectingLeg === "outbound" ? "" : "opacity-50"
+                      }
+                    >
+                      <div className="text-sm text-muted-foreground">
+                        Outbound Flight
+                      </div>
                       <div className="font-medium text-sm">{flightNumber}</div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        Seats: {outboundSeats.length > 0 ? outboundSeats.join(", ") : "Not selected"}
+                        Seats:{" "}
+                        {outboundSeats.length > 0
+                          ? outboundSeats.join(", ")
+                          : "Not selected"}
                       </div>
                     </div>
-                    
-                    <div className={selectingLeg === "return" ? "" : "opacity-50"}>
-                      <div className="text-sm text-muted-foreground">Return Flight</div>
-                      <div className="font-medium text-sm">{returnFlightNumber}</div>
+
+                    <div
+                      className={selectingLeg === "return" ? "" : "opacity-50"}
+                    >
+                      <div className="text-sm text-muted-foreground">
+                        Return Flight
+                      </div>
+                      <div className="font-medium text-sm">
+                        {returnFlightNumber}
+                      </div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        Seats: {returnSeats.length > 0 ? returnSeats.join(", ") : "Not selected"}
+                        Seats:{" "}
+                        {returnSeats.length > 0
+                          ? returnSeats.join(", ")
+                          : "Not selected"}
                       </div>
                     </div>
 
                     <div className="border-t pt-4">
                       <div className="text-sm font-medium mb-2">
-                        {selectingLeg === "outbound" ? "Outbound" : "Return"} - Selected Seats ({selectedSeats.length}/{maxPassengers})
+                        {selectingLeg === "outbound" ? "Outbound" : "Return"} -
+                        Selected Seats ({selectedSeats.length}/{maxPassengers})
                       </div>
                       <div className="font-medium text-sm">
-                        {selectedSeats.length > 0 ? selectedSeats.join(", ") : "None"}
+                        {selectedSeats.length > 0
+                          ? selectedSeats.join(", ")
+                          : "None"}
                       </div>
                     </div>
                   </>
                 ) : (
                   <>
                     <div>
-                      <div className="text-sm text-muted-foreground">Flight</div>
+                      <div className="text-sm text-muted-foreground">
+                        Flight
+                      </div>
                       <div className="font-medium">{flightNumber}</div>
                     </div>
 
                     <div>
-                      <div className="text-sm text-muted-foreground">Selected Seats ({selectedSeats.length}/{maxPassengers})</div>
+                      <div className="text-sm text-muted-foreground">
+                        Selected Seats ({selectedSeats.length}/{maxPassengers})
+                      </div>
                       <div className="font-medium">
-                        {selectedSeats.length > 0 ? selectedSeats.join(", ") : "None"}
+                        {selectedSeats.length > 0
+                          ? selectedSeats.join(", ")
+                          : "None"}
                       </div>
                     </div>
                   </>
@@ -337,24 +400,35 @@ const SeatSelection = () => {
                 <div className="border-t pt-4 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Base Fare</span>
-                    <span>{currency.symbol}{isRoundTrip ? (parseInt(price) + parseInt(returnPrice)) : price}</span>
+                    <span>
+                      {currency.symbol}
+                      {isRoundTrip
+                        ? parseInt(price) + parseInt(returnPrice)
+                        : price}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Seat Selection</span>
-                    <span>{currency.symbol}{totalSeatPrice}</span>
+                    <span>
+                      {currency.symbol}
+                      {totalSeatPrice}
+                    </span>
                   </div>
                   <div className="flex justify-between font-bold text-lg pt-2 border-t">
                     <span>Total</span>
-                    <span className="text-primary">{currency.symbol}{(isRoundTrip ? (parseInt(price) + parseInt(returnPrice)) : parseInt(price)) + totalSeatPrice}</span>
+                    <span className="text-primary">
+                      {currency.symbol}
+                      {(isRoundTrip
+                        ? parseInt(price) + parseInt(returnPrice)
+                        : parseInt(price)) + totalSeatPrice}
+                    </span>
                   </div>
                 </div>
 
-                <Button 
-                  className="w-full" 
-                  size="lg"
-                  onClick={handleContinue}
-                >
-                  {isRoundTrip && selectingLeg === "outbound" ? "Continue to Return Seats" : "Continue to Add-ons"}
+                <Button className="w-full" size="lg" onClick={handleContinue}>
+                  {isRoundTrip && selectingLeg === "outbound"
+                    ? "Continue to Return Seats"
+                    : "Continue to Add-ons"}
                 </Button>
               </CardContent>
             </Card>

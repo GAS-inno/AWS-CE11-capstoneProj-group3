@@ -5,14 +5,15 @@
 # Backend Infrastructure Outputs
 # ==============================================
 
-output "s3_bucket_name" {
-  description = "Name of the S3 bucket for Terraform state"
-  value       = try(aws_s3_bucket.terraform_state.id, "not_created")
+# S3 Backend State Bucket Info
+output "s3_backend_bucket" {
+  description = "S3 bucket used for Terraform state"
+  value       = "sctp-ce11-tfstate"
 }
 
-output "s3_bucket_arn" {
-  description = "ARN of the S3 bucket for Terraform state"
-  value       = try(aws_s3_bucket.terraform_state.arn, "not_created")
+output "s3_backend_key" {
+  description = "S3 key path for Terraform state"
+  value       = "sky-high-booker/terraform.tfstate"
 }
 
 output "dynamodb_table_name" {
@@ -29,24 +30,25 @@ output "dynamodb_table_arn" {
 # Network Infrastructure Outputs
 # ==============================================
 
+# VPC & Network Outputs (using default VPC)
 output "vpc_id" {
-  description = "VPC ID being used"
-  value       = var.use_default_vpc ? try(data.aws_vpc.selected[0].id, "default_vpc_not_found") : try(aws_vpc.main.id, "custom_vpc_not_created")
+  description = "ID of the default VPC"
+  value       = "Using default VPC - see ECS outputs for actual VPC ID"
 }
 
 output "vpc_cidr" {
-  description = "VPC CIDR block"
-  value       = var.use_default_vpc ? try(data.aws_vpc.selected[0].cidr_block, "default_vpc_not_found") : var.vpc_cidr
+  description = "CIDR block of the default VPC"
+  value       = "Default VPC - see ECS outputs for actual CIDR"
 }
 
 output "public_subnet_ids" {
-  description = "Public subnet IDs"
-  value       = data.aws_subnets.public.ids
+  description = "Default subnets used by ECS"
+  value       = "Default subnets - see ECS outputs for actual subnet IDs"
 }
 
 output "private_subnet_ids" {
-  description = "Private subnet IDs (if created)"
-  value       = var.use_default_vpc ? [] : try(data.aws_subnets.private[0].ids, [])
+  description = "Private subnets (not used in simplified config)"
+  value       = []
 }
 
 # ==============================================
@@ -93,23 +95,23 @@ output "ecs_service_name" {
 # ==============================================
 
 output "alb_dns_name" {
-  description = "Application Load Balancer DNS name"
-  value       = var.create_alb ? module.alb[0].dns_name : "alb_not_created"
+  description = "Application Load Balancer DNS name (from ECS module)"
+  value       = try(module.ecs.load_balancer_dns_name, "alb_not_created")
 }
 
 output "alb_arn" {
-  description = "Application Load Balancer ARN"
-  value       = var.create_alb ? module.alb[0].arn : "alb_not_created"
+  description = "Application Load Balancer ARN (from ECS module)"
+  value       = try(module.ecs.load_balancer_arn, "alb_not_created")
 }
 
 output "alb_zone_id" {
-  description = "Application Load Balancer hosted zone ID"
-  value       = var.create_alb ? module.alb[0].zone_id : "alb_not_created"
+  description = "Application Load Balancer hosted zone ID (from ECS module)"
+  value       = try(module.ecs.load_balancer_zone_id, "alb_not_created")
 }
 
 output "target_group_arn" {
-  description = "Target group ARN for ECS service"
-  value       = var.create_alb ? module.alb[0].target_groups["ecs-service"].arn : "alb_not_created"
+  description = "Target group ARN for ECS service (from ECS module)"
+  value       = try(module.ecs.target_group_arns[0], "target_group_not_created")
 }
 
 # ==============================================
@@ -117,13 +119,13 @@ output "target_group_arn" {
 # ==============================================
 
 output "ecs_security_group_id" {
-  description = "Security group ID for ECS tasks"
-  value       = module.ecs_security_group.security_group_id
+  description = "Security group ID for ECS tasks (from ECS module)"
+  value       = try(module.ecs.service_security_group_id, "sg_not_created")
 }
 
 output "alb_security_group_id" {
-  description = "Security group ID for ALB"
-  value       = var.create_alb ? module.alb_security_group[0].security_group_id : "alb_not_created"
+  description = "Security group ID for ALB (from ECS module)"
+  value       = try(module.ecs.load_balancer_security_group_id, "sg_not_created")
 }
 
 # ==============================================
@@ -132,12 +134,12 @@ output "alb_security_group_id" {
 
 output "application_url" {
   description = "Sky High Booker application URL"
-  value = var.create_alb ? "http://${module.alb[0].dns_name}" : "Direct ECS access - no ALB configured"
+  value       = try("http://${module.ecs.load_balancer_dns_name}", "Application URL not available")
 }
 
 output "health_check_url" {
   description = "Application health check endpoint"
-  value = var.create_alb ? "http://${module.alb[0].dns_name}/health" : "Health check via ECS tasks directly"
+  value       = try("http://${module.ecs.load_balancer_dns_name}/health", "Health check URL not available")
 }
 
 # ==============================================
@@ -181,11 +183,65 @@ output "docker_push_commands" {
 output "ecs_deployment_info" {
   description = "ECS deployment information"
   value = {
-    cluster_name       = module.ecs.cluster_name
-    service_name       = try(module.ecs.services["sky-high-booker"].name, "service_not_created")
-    task_definition    = try(module.ecs.services["sky-high-booker"].task_definition, "task_not_created")
-    desired_count      = var.ecs_desired_count
-    cpu                = var.ecs_task_cpu
-    memory             = var.ecs_task_memory
+    cluster_name    = module.ecs.cluster_name
+    service_name    = try(module.ecs.services["sky-high-booker"].name, "service_not_created")
+    task_definition = try(module.ecs.services["sky-high-booker"].task_definition, "task_not_created")
+    desired_count   = var.ecs_desired_count
+    cpu             = var.ecs_task_cpu
+    memory          = var.ecs_task_memory
   }
+}
+
+# ==============================================
+# AWS Services Outputs for Application
+# ==============================================
+
+output "cognito_user_pool_id" {
+  description = "Cognito User Pool ID for authentication"
+  value       = aws_cognito_user_pool.user_pool.id
+}
+
+output "cognito_user_pool_client_id" {
+  description = "Cognito User Pool Client ID for authentication"
+  value       = aws_cognito_user_pool_client.user_pool_client.id
+}
+
+output "api_gateway_url" {
+  description = "API Gateway URL for backend API"
+  value       = "https://${aws_api_gateway_rest_api.booking_api.id}.execute-api.${data.aws_region.current.name}.amazonaws.com/prod"
+}
+
+output "app_s3_bucket_name" {
+  description = "S3 bucket name for application file storage"
+  value       = aws_s3_bucket.app_storage.id
+}
+
+output "dynamodb_tables" {
+  description = "DynamoDB table names"
+  value = {
+    flights   = aws_dynamodb_table.flights.name
+    bookings  = aws_dynamodb_table.bookings.name
+    payments  = aws_dynamodb_table.payments.name
+  }
+}
+
+output "aws_environment_variables" {
+  description = "Environment variables for AWS services"
+  value = {
+    VITE_AWS_REGION                = data.aws_region.current.name
+    VITE_AWS_USER_POOL_ID         = aws_cognito_user_pool.user_pool.id
+    VITE_AWS_USER_POOL_CLIENT_ID  = aws_cognito_user_pool_client.user_pool_client.id
+    VITE_AWS_API_GATEWAY_URL      = "https://${aws_api_gateway_rest_api.booking_api.id}.execute-api.${data.aws_region.current.name}.amazonaws.com/prod"
+    VITE_AWS_S3_BUCKET           = aws_s3_bucket.app_storage.id
+  }
+}
+
+output "cognito_identity_pool_id" {
+  description = "ID of the Cognito Identity Pool"
+  value       = try(aws_cognito_identity_pool.identity_pool.id, "identity_pool_not_created")
+}
+
+output "dynamodb_region" {
+  description = "AWS region for DynamoDB tables"
+  value       = data.aws_region.current.name
 }
