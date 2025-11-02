@@ -30,16 +30,11 @@ permissions:
   contents: read
 
 jobs:
-  # Tests are handled by CI workflow - deploy assumes tests have passed
-
-    - name: Type check
-      run: npm run type-check
-
   build-and-deploy:
     name: Build and Deploy
     runs-on: ubuntu-latest
-    # Tests handled by CI workflow - deploy only when on main branch or manual dispatch
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    # Manual dispatch only - no automatic triggers
+    if: github.event_name == 'workflow_dispatch'
 
     steps:
     - name: Checkout
