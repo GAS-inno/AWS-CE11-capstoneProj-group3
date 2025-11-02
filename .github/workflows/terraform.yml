@@ -47,10 +47,6 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
-    defaults:
-      run:
-        working-directory: terraform
-
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -68,12 +64,15 @@ jobs:
         terraform_version: ${{ env.TF_VERSION }}
 
     - name: Terraform Format Check
+      working-directory: terraform
       run: terraform fmt -check
 
     - name: Terraform Init
+      working-directory: terraform
       run: terraform init
 
     - name: Terraform Validate
+      working-directory: terraform
       run: terraform validate
 
     - name: Setup TFLint
@@ -82,9 +81,11 @@ jobs:
         tflint_version: latest
 
     - name: Init TFLint
+      working-directory: terraform
       run: tflint --init
 
     - name: Run TFLint
+      working-directory: terraform
       run: tflint -f compact
 
     - name: Checkov Security Scan
@@ -94,6 +95,7 @@ jobs:
         directory: terraform
 
     - name: Terraform Plan (PR)
+      working-directory: terraform
       run: terraform plan -no-color -input=false
 
   # Auto-apply on push to main
@@ -101,10 +103,6 @@ jobs:
     name: Terraform Apply
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    defaults:
-      run:
-        working-directory: terraform
 
     steps:
     - name: Checkout
@@ -124,15 +122,19 @@ jobs:
         terraform_wrapper: false
 
     - name: Terraform Init
+      working-directory: terraform
       run: terraform init
 
     - name: Terraform Plan
+      working-directory: terraform
       run: terraform plan -no-color -input=false -out=tfplan
 
     - name: Terraform Apply
+      working-directory: terraform
       run: terraform apply -auto-approve tfplan
 
     - name: Terraform Output
+      working-directory: terraform
       run: |
         echo "## 🎉 Terraform Apply Successful!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
@@ -161,10 +163,6 @@ jobs:
     environment: ${{ github.event.inputs.environment }}
     if: github.event_name == 'workflow_dispatch'
 
-    defaults:
-      run:
-        working-directory: terraform
-
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -183,20 +181,24 @@ jobs:
 
     - name: Terraform Format Check
       id: fmt
+      working-directory: terraform
       run: terraform fmt -check
       continue-on-error: true
 
     - name: Terraform Init
       id: init
+      working-directory: terraform
       run: terraform init
 
     - name: Terraform Validate
       id: validate
+      working-directory: terraform
       run: terraform validate -no-color
 
     - name: Terraform Plan
       id: plan
       if: github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
+      working-directory: terraform
       run: |
         terraform plan -no-color -input=false \
           -var="environment=${{ github.event.inputs.environment }}" \
@@ -239,10 +241,12 @@ jobs:
 
     - name: Terraform Apply
       if: github.event.inputs.action == 'apply'
+      working-directory: terraform
       run: terraform apply -auto-approve tfplan
 
     - name: Terraform Destroy Plan
       if: github.event.inputs.action == 'destroy'
+      working-directory: terraform
       run: |
         terraform plan -destroy -no-color -input=false \
           -var="environment=${{ github.event.inputs.environment }}" \
@@ -250,10 +254,12 @@ jobs:
 
     - name: Terraform Destroy
       if: github.event.inputs.action == 'destroy'
+      working-directory: terraform
       run: terraform apply -auto-approve destroy-plan
 
     - name: Output Terraform Results
       if: github.event.inputs.action == 'apply'
+      working-directory: terraform
       run: |
         echo "🎉 Terraform ${{ github.event.inputs.action }} completed successfully!"
         echo "📋 Infrastructure Summary:"
