@@ -1,6 +1,11 @@
 name: Terraform Infrastructure
 
 on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform.yml'
   workflow_dispatch:
     inputs:
       action:
@@ -90,6 +95,64 @@ jobs:
 
     - name: Terraform Plan (PR)
       run: terraform plan -no-color -input=false
+
+  # Auto-apply on push to main
+  apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+        terraform_wrapper: false
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Plan
+      run: terraform plan -no-color -input=false -out=tfplan
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve tfplan
+
+    - name: Terraform Output
+      run: |
+        echo "## 🎉 Terraform Apply Successful!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### AWS Resources Created/Updated" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Cognito User Pool & Client (Authentication)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ DynamoDB Tables (flights, bookings, payments, user-profiles)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ API Gateway REST API" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ S3 Bucket (static assets)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ ECS Fargate Cluster with ALB" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ ECR Repository" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Terraform Outputs" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+        terraform output -json >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "1. Copy the outputs above to update your .env file" >> $GITHUB_STEP_SUMMARY
+        echo "2. Build Docker image and push to ECR" >> $GITHUB_STEP_SUMMARY
+        echo "3. Deploy to ECS using the deploy workflow" >> $GITHUB_STEP_SUMMARY
 
   # Infrastructure job for manual deployments
   terraform:
