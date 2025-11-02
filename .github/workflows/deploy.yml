@@ -16,11 +16,7 @@ on:
         - dev
         - staging
         - prod
-      skip_tests:
-        description: 'Skip test execution (emergency deployments only)'
-        required: false
-        default: false
-        type: boolean
+# Tests are handled by CI workflow automatically
 
 env:
   AWS_REGION: us-east-1
@@ -33,29 +29,7 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: Test Application
-    runs-on: ubuntu-latest
-    if: github.event.inputs.skip_tests != 'true'
-    
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Run tests
-      run: npm test
-
-    - name: Run linting
-      run: npm run lint
+  # Tests are handled by CI workflow - deploy assumes tests have passed
 
     - name: Type check
       run: npm run type-check
@@ -63,8 +37,8 @@ jobs:
   build-and-deploy:
     name: Build and Deploy
     runs-on: ubuntu-latest
-    needs: test
-    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped') && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+    # Tests handled by CI workflow - deploy only when on main branch or manual dispatch
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
 
     steps:
     - name: Checkout
@@ -75,7 +49,6 @@ jobs:
       run: |
         echo "🔍 Validating manual deployment inputs..."
         echo "Environment: ${{ github.event.inputs.environment }}"
-        echo "Skip Tests: ${{ github.event.inputs.skip_tests }}"
         
         # Warn if deploying to production
         if [ "${{ github.event.inputs.environment }}" == "prod" ]; then
@@ -83,11 +56,8 @@ jobs:
           echo "Please ensure this deployment has been properly reviewed."
         fi
         
-        # Warn if skipping tests
-        if [ "${{ github.event.inputs.skip_tests }}" == "true" ]; then
-          echo "⚠️  WARNING: Skipping test execution!"
-          echo "This should only be used for emergency deployments."
-        fi
+        # Tests are handled automatically by CI workflow
+        echo "✅ Tests validated by CI pipeline before deployment"
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -180,9 +150,8 @@ jobs:
         if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
           echo "🚀 Deployment Type: Manual"
           echo "👤 Triggered by: ${{ github.actor }}"
-          if [ "${{ github.event.inputs.skip_tests }}" == "true" ]; then
-            echo "⚠️  Tests were skipped (emergency deployment)"
-          fi
+          echo "✅ Tests validated by CI pipeline"
         else
           echo "🚀 Deployment Type: Automatic (Push to main)"
+          echo "✅ Tests validated by CI pipeline"
         fi

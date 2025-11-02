@@ -124,11 +124,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         return { success: false, error: 'Sign up requires additional steps' }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign up error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create account. Please try again.'
       return { 
         success: false, 
-        error: error.message || 'Failed to create account. Please try again.' 
+        error: errorMessage
       }
     }
   }
@@ -159,17 +160,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         return { success: false, error: 'Sign in requires additional steps' }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign in error:', error)
       
       let errorMessage = 'Unable to sign in. Please check your credentials.'
       
-      if (error.name === 'NotAuthorizedException') {
-        errorMessage = 'Invalid email or password. Please try again.'
-      } else if (error.name === 'UserNotConfirmedException') {
-        errorMessage = 'Please confirm your email address before signing in.'
-      } else if (error.name === 'NetworkError' || error.message?.includes('fetch')) {
-        errorMessage = 'Unable to connect to authentication service. Please check your internet connection.'
+      if (error && typeof error === 'object' && 'name' in error) {
+        const authError = error as { name: string; message?: string }
+        if (authError.name === 'NotAuthorizedException') {
+          errorMessage = 'Invalid email or password. Please try again.'
+        } else if (authError.name === 'UserNotConfirmedException') {
+          errorMessage = 'Please confirm your email address before signing in.'
+        } else if (authError.name === 'NetworkError' || authError.message?.includes('fetch')) {
+          errorMessage = 'Unable to connect to authentication service. Please check your internet connection.'
+        }
       }
       
       return { success: false, error: errorMessage }
@@ -182,11 +186,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await signOut()
       setUser(null)
       return { success: true }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Sign out error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to sign out. Please try again.'
       return { 
         success: false, 
-        error: error.message || 'Failed to sign out. Please try again.' 
+        error: errorMessage
       }
     }
   }

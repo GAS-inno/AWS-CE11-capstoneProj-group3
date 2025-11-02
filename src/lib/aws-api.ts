@@ -86,7 +86,7 @@ class AWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = await response.body.json() as { flights?: Flight[] }
       return data.flights || []
     } catch (error) {
       console.error('Error searching flights:', error)
@@ -102,7 +102,7 @@ class AWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = await response.body.json() as { flight?: Flight }
       return data.flight || null
     } catch (error) {
       console.error('Error fetching flight:', error)
@@ -129,7 +129,7 @@ class AWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = (await response.body.json()) as unknown as { booking: Booking }
       return data.booking
     } catch (error) {
       console.error('Error creating booking:', error)
@@ -147,7 +147,7 @@ class AWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = await response.body.json() as { bookings?: Booking[] }
       return data.bookings || []
     } catch (error) {
       console.error('Error fetching user bookings:', error)
@@ -163,7 +163,7 @@ class AWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = await response.body.json() as { booking?: Booking }
       return data.booking || null
     } catch (error) {
       console.error('Error fetching booking:', error)
@@ -185,7 +185,7 @@ class AWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = (await response.body.json()) as unknown as { booking: Booking }
       return data.booking
     } catch (error) {
       console.error('Error updating booking:', error)

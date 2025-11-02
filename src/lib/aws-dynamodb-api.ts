@@ -98,7 +98,7 @@ class DynamoDBAWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = (await response.body.json()) as unknown as { flights?: Flight[] }
       return data.flights || []
     } catch (error) {
       console.error('Error searching flights:', error)
@@ -114,7 +114,7 @@ class DynamoDBAWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = (await response.body.json()) as unknown as { flight?: Flight }
       return data.flight || null
     } catch (error) {
       console.error('Error fetching flight:', error)
@@ -151,7 +151,7 @@ class DynamoDBAWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = (await response.body.json()) as unknown as { booking: Booking }
       return data.booking
     } catch (error) {
       console.error('Error creating booking:', error)
@@ -169,7 +169,7 @@ class DynamoDBAWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = (await response.body.json()) as unknown as { bookings?: Booking[] }
       return data.bookings || []
     } catch (error) {
       console.error('Error fetching user bookings:', error)
@@ -185,7 +185,7 @@ class DynamoDBAWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = (await response.body.json()) as unknown as { booking?: Booking }
       return data.booking || null
     } catch (error) {
       console.error('Error fetching booking:', error)
@@ -207,7 +207,7 @@ class DynamoDBAWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = (await response.body.json()) as unknown as { booking: Booking }
       return data.booking
     } catch (error) {
       console.error('Error updating booking:', error)
@@ -275,7 +275,7 @@ class DynamoDBAWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = (await response.body.json()) as unknown as { payment: Payment }
       return data.payment
     } catch (error) {
       console.error('Error creating payment:', error)
@@ -291,7 +291,7 @@ class DynamoDBAWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = (await response.body.json()) as unknown as { payments?: Payment[] }
       return data.payments || []
     } catch (error) {
       console.error('Error fetching payments:', error)
@@ -304,7 +304,7 @@ class DynamoDBAWSAPIService {
     firstName?: string
     lastName?: string
     email?: string
-    preferences?: any
+    preferences?: Record<string, unknown>
   }): Promise<void> {
     try {
       const user = await getCurrentUser()
@@ -336,7 +336,7 @@ class DynamoDBAWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = (await response.body.json()) as unknown as { flights?: Flight[] }
       return data.flights || []
     } catch (error) {
       console.error('Error fetching flights by airline:', error)
@@ -344,7 +344,7 @@ class DynamoDBAWSAPIService {
     }
   }
 
-  async getBookingStats(): Promise<any> {
+  async getBookingStats(): Promise<Record<string, unknown>> {
     try {
       const restOperation = get({
         apiName: API_NAME,
@@ -352,7 +352,7 @@ class DynamoDBAWSAPIService {
       })
 
       const response = await restOperation.response
-      const data = await response.body.json() as any
+      const data = (await response.body.json()) as unknown as { stats?: Record<string, unknown> }
       return data.stats || {}
     } catch (error) {
       console.error('Error fetching booking stats:', error)
