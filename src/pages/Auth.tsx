@@ -10,7 +10,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Plane } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AWSAuthContext";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -58,12 +58,12 @@ const Auth = () => {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
-          if (error.message.includes("Invalid login credentials")) {
+          if (error.includes("Invalid login credentials")) {
             toast.error("Invalid email or password");
-          } else if (error.message.includes("fetch")) {
+          } else if (error.includes("fetch")) {
             toast.error("Unable to connect to authentication service. Please check your internet connection or try again later.");
           } else {
-            toast.error(error.message);
+            toast.error(error);
           }
         } else {
           toast.success("Welcome back!");
@@ -72,14 +72,14 @@ const Auth = () => {
       } else {
         const { error } = await signUp(email, password, fullName);
         if (error) {
-          if (error.message.includes("already registered")) {
+          if (error.includes("already registered")) {
             toast.error(
               "This email is already registered. Please sign in instead.",
             );
-          } else if (error.message.includes("fetch")) {
+          } else if (error.includes("fetch")) {
             toast.error("Unable to connect to authentication service. Please check your internet connection or try again later.");
           } else {
-            toast.error(error.message);
+            toast.error(error);
           }
         } else {
           toast.success("Account created successfully! Welcome aboard!");

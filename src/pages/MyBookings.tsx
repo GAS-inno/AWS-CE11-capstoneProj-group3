@@ -11,8 +11,12 @@ import {
   Users,
   CreditCard,
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useAuth } from "@/contexts/AWSAuthContext";
 import { toast } from "sonner";
 
 interface Booking {
@@ -44,29 +48,23 @@ const MyBookings = () => {
     }
   }, [user, authLoading, navigate]);
 
-  useEffect(() => {
-    if (user) {
-      fetchBookings();
-    }
-  }, [user, fetchBookings]);
-
   const fetchBookings = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("*")
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      setBookings(data || []);
+      // TODO: Replace with AWS DynamoDB API call
+      console.log('TODO: Fetch bookings from DynamoDB for user:', user?.id);
+      setBookings([]);
     } catch (error) {
       toast.error("Error loading bookings");
     } finally {
       setLoading(false);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchBookings();
+    }
+  }, [user, fetchBookings]);
 
   if (loading || authLoading) {
     return (

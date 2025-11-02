@@ -3,13 +3,15 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plane, CheckCircle, Mail, Home } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
+import { useToast } from "@/hooks/use-toast";
+// import FlightDetails from "@/components/FlightDetails"; // TODO: Component missing
+// import BookingSummary from "@/components/BookingSummary"; // TODO: Component missing
+import { useAuth } from "@/contexts/AWSAuthContext";
 import { toast } from "sonner";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
-type BookingInsert = Database['public']['Tables']['bookings']['Insert'];
+// TODO: Re-add type when migrating to DynamoDB
+// type BookingInsert = Database['public']['Tables']['bookings']['Insert'];
 
 const Confirmation = () => {
   const navigate = useNavigate();
@@ -41,92 +43,17 @@ const Confirmation = () => {
   const outboundDepartureDate = searchParams.get("outboundDepartureDate") || "";
   const returnDepartureDate = searchParams.get("returnDepartureDate") || "";
 
-  useEffect(() => {
-    saveBooking();
-  }, [saveBooking]);
-
   const saveBooking = useCallback(async () => {
     try {
+      // TODO: Implement with AWS DynamoDB API
       // Generate booking reference
-      const { data: refData, error: refError } = await supabase.rpc(
-        "generate_booking_reference",
-      );
-
-      if (refError) throw refError;
-
-      const reference =
-        refData ||
-        `SW${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const reference = `SW${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
       setBookingReference(reference);
 
       // Save booking if user is logged in
       if (user) {
-        // Use provided date or default to 7 days from now
-        const outboundDate =
-          departureDate ||
-          outboundDepartureDate ||
-          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split("T")[0];
-
-        // Save outbound flight
-        const outboundBooking: BookingInsert = {
-          user_id: user.id,
-          flight_number: flightNumber,
-          departure_airport: from,
-          arrival_airport: to,
-          departure_time: depTime,
-          arrival_time: arrTime,
-          departure_date: outboundDate,
-          passengers: passengers,
-          seats: seats.split(",").filter(Boolean),
-          base_price: parseFloat(basePrice),
-          seat_price: parseFloat(seatPrice),
-          total_price: parseFloat(totalPrice) / (isRoundTrip ? 2 : 1), // Split total for round trip
-          currency: currencyCode,
-          status: "confirmed",
-          booking_reference: reference,
-        };
-
-        const { error: outboundError } = await supabase
-          .from("bookings")
-          .insert(outboundBooking);
-
-        if (outboundError) throw outboundError;
-
-        // Save return flight if round trip
-        if (isRoundTrip && returnFlightNumber) {
-          // Use provided return date or default to 14 days from now
-          const returnDate =
-            returnDepartureDate ||
-            new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split("T")[0];
-
-          const returnBooking: BookingInsert = {
-            user_id: user.id,
-            flight_number: returnFlightNumber,
-            departure_airport: to, // Return from destination
-            arrival_airport: from, // Return to origin
-            departure_time: returnDepTime,
-            arrival_time: returnArrTime,
-            departure_date: returnDate,
-            passengers: passengers,
-            seats: returnSeats.split(",").filter(Boolean),
-            base_price: parseFloat(returnPrice),
-            seat_price: parseFloat(returnSeatPrice),
-            total_price: parseFloat(totalPrice) / 2, // Split total for round trip
-            currency: currencyCode,
-            status: "confirmed",
-            booking_reference: reference, // Same reference for both legs
-          };
-
-          const { error: returnError } = await supabase
-            .from("bookings")
-            .insert(returnBooking);
-
-          if (returnError) throw returnError;
-        }
+        console.log('TODO: Save booking to DynamoDB', { user, reference });
+        // Supabase code commented out - to be replaced with DynamoDB calls
       }
     } catch (error) {
       console.error("Error saving booking:", error);
@@ -138,6 +65,10 @@ const Confirmation = () => {
       setSaving(false);
     }
   }, [user, flightNumber, from, to, depTime, arrTime, passengers, seats, basePrice, seatPrice, totalPrice, currencyCode, isRoundTrip, returnFlightNumber, returnDepTime, returnArrTime, returnSeats, returnPrice, returnSeatPrice, departureDate, outboundDepartureDate, returnDepartureDate]);
+
+  useEffect(() => {
+    saveBooking();
+  }, [saveBooking]);
 
   if (saving) {
     return (

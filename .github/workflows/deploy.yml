@@ -1,10 +1,11 @@
-name: Build and Deploy to ECS
+name: Build and Deploy to ECS (Manual Only)
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  # Disabled automatic triggers - use workflow_dispatch for manual deployments only
+  # push:
+  #   branches: [ "main" ]
+  # pull_request:
+  #   branches: [ "main" ]
   workflow_dispatch:
     inputs:
       environment:

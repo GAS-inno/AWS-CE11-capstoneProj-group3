@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plane, ArrowLeft } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AWSAuthContext";
 import { toast } from "sonner";
 
 interface Profile {
@@ -31,23 +30,9 @@ const Profile = () => {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user?.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        setProfile({
-          full_name: data.full_name || "",
-          phone: data.phone || "",
-          date_of_birth: data.date_of_birth || "",
-          passport_number: data.passport_number || "",
-          frequent_flyer_number: data.frequent_flyer_number || "",
-        });
-      }
+      // TODO: Replace with AWS DynamoDB API call
+      console.log('TODO: Fetch profile from DynamoDB for user:', user?.id);
+      // Leave profile empty for now
     } catch (error) {
       toast.error("Error loading profile");
     } finally {
@@ -72,19 +57,8 @@ const Profile = () => {
     setSaving(true);
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: profile.full_name,
-          phone: profile.phone,
-          date_of_birth: profile.date_of_birth || null,
-          passport_number: profile.passport_number,
-          frequent_flyer_number: profile.frequent_flyer_number,
-        })
-        .eq("id", user?.id);
-
-      if (error) throw error;
-
+      // TODO: Replace with AWS DynamoDB API call
+      console.log('TODO: Update profile in DynamoDB for user:', user?.id, profile);
       toast.success("Profile updated successfully");
     } catch (error) {
       toast.error("Error updating profile");

@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plane, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { supabase } from "@/integrations/supabase/client";
 
 const ROWS = 30;
 const SEATS_PER_ROW = 6;
@@ -52,17 +51,9 @@ const SeatSelection = () => {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("seats")
-        .eq("flight_number", currentFlight)
-        .eq("departure_date", currentDate);
-
-      if (error) throw error;
-
-      // Flatten all seat arrays into a single array of occupied seats
-      const allOccupiedSeats = data?.flatMap((booking) => booking.seats) || [];
-      setOccupiedSeats(allOccupiedSeats);
+      // TODO: Replace with AWS DynamoDB API call
+      console.log('TODO: Fetch occupied seats from DynamoDB for flight:', currentFlight, currentDate);
+      setOccupiedSeats([]);
     } catch (error) {
       console.error("Error fetching occupied seats:", error);
       toast.error("Could not load seat availability");

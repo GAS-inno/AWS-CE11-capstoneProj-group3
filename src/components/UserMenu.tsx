@@ -1,5 +1,5 @@
 import { User, LogOut, Ticket } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AWSAuthContext";
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
