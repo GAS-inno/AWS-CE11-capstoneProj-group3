@@ -1,22 +1,67 @@
 # Simplified ECS Configuration based on jaezeu/ecs-deployment reference
 # This replaces the complex main.tf ECS configuration
 
-# Use default VPC (persistent, not deleted daily)
-data "aws_vpc" "default" {
-  default = true
+# Create a simple VPC for ECS (since default VPC doesn't exist)
+resource "aws_vpc" "main" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = merge(local.tags, {
+    Name = "${local.prefix}-vpc"
+  })
 }
 
-# Get default subnets from the default VPC
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
+# Internet Gateway
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+
+  tags = merge(local.tags, {
+    Name = "${local.prefix}-igw"
+  })
+}
+
+# Public subnets (2 AZs for ALB requirement)
+resource "aws_subnet" "public" {
+  count = 2
+
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.${count.index + 1}.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  map_public_ip_on_launch = true
+
+  tags = merge(local.tags, {
+    Name = "${local.prefix}-public-${count.index + 1}"
+    Type = "Public"
+  })
+}
+
+# Route table for public subnets
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
   }
 
-  filter {
-    name   = "default-for-az"
-    values = ["true"]
-  }
+  tags = merge(local.tags, {
+    Name = "${local.prefix}-public-rt"
+  })
+}
+
+# Associate route table with public subnets
+resource "aws_route_table_association" "public" {
+  count = length(aws_subnet.public)
+
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public.id
+}
+
+# Use the created VPC and subnets
+locals {
+  vpc_id     = aws_vpc.main.id
+  subnet_ids = aws_subnet.public[*].id
 }
 
 # Get available AZs
@@ -83,7 +128,7 @@ module "ecs" {
 
       # Network configuration
       assign_public_ip   = true
-      subnet_ids         = data.aws_subnets.default.ids
+      subnet_ids         = local.subnet_ids
       security_group_ids = [module.ecs_sg.security_group_id]
 
       # Load balancer configuration
@@ -107,7 +152,7 @@ module "ecs_sg" {
 
   name        = "${local.prefix}-ecs-sg"
   description = "Security group for ECS tasks"
-  vpc_id      = data.aws_vpc.default.id
+  vpc_id      = local.vpc_id
 
   ingress_cidr_blocks = ["0.0.0.0/0"]
   ingress_rules       = ["http-80-tcp"]
@@ -122,7 +167,7 @@ resource "aws_lb" "main" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [module.alb_sg.security_group_id]
-  subnets            = data.aws_subnets.default.ids
+  subnets            = local.subnet_ids
 
   enable_deletion_protection = false
 
@@ -136,7 +181,7 @@ module "alb_sg" {
 
   name        = "${local.prefix}-alb-sg"
   description = "Security group for Application Load Balancer"
-  vpc_id      = data.aws_vpc.default.id
+  vpc_id      = local.vpc_id
 
   ingress_cidr_blocks = ["0.0.0.0/0"]
   ingress_rules       = ["http-80-tcp", "https-443-tcp"]
@@ -150,7 +195,7 @@ resource "aws_lb_target_group" "ecs" {
   name        = "${local.prefix}-tg"
   port        = 80
   protocol    = "HTTP"
-  vpc_id      = data.aws_vpc.default.id
+  vpc_id      = local.vpc_id
   target_type = "ip"
 
   health_check {
