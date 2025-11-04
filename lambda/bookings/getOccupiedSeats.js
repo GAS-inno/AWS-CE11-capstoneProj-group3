@@ -56,7 +56,8 @@ exports.handler = async (event) => {
     const command = new QueryCommand(queryParams);
     const result = await ddbDocClient.send(command);
 
-    // Also scan for bookings where this is the return flight
+    // Also scan for ALL bookings where this flight appears as return_flight_id
+    // This includes round-trip bookings where someone else selected this flight as their return
     const scanParams = {
       TableName: BOOKINGS_TABLE,
       FilterExpression: 'return_flight_id = :flightId',
@@ -74,9 +75,8 @@ exports.handler = async (event) => {
     const scanCommand = new ScanCommand(scanParams);
     const returnFlightResult = await ddbDocClient.send(scanCommand);
 
-    console.log('Query result items:', result.Items?.length || 0);
-    console.log('Scan result items:', returnFlightResult.Items?.length || 0);
-    console.log('Return flight scan results:', JSON.stringify(returnFlightResult.Items, null, 2));
+    console.log('Outbound bookings (flight_id):', result.Items?.length || 0);
+    console.log('Return bookings (return_flight_id):', returnFlightResult.Items?.length || 0);
 
     // Extract occupied seats from bookings
     const occupiedSeats = [];
