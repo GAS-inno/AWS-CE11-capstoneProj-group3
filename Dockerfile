@@ -26,6 +26,9 @@ COPY scripts/docker/nginx.conf /etc/nginx/nginx.conf
 # Copy built application from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+# Make the html directory writable for environment variable injection
+RUN chmod -R 755 /usr/share/nginx/html
+
 # Copy a simple script to handle environment variables at runtime
 COPY scripts/docker/env-config.sh /docker-entrypoint.d/40-env-config.sh
 RUN chmod +x /docker-entrypoint.d/40-env-config.sh

@@ -101,8 +101,9 @@ module "ecs" {
       # Container definition - simplified to avoid circular dependencies
       container_definitions = {
         sky-high-booker-container = {
-          essential = true
-          image     = "nginx:alpine" # Use a simple image for initial deployment
+          essential                = true
+          image                    = "${aws_ecr_repository.sky_high_booker.repository_url}:latest"
+          readonly_root_filesystem = false # Disable read-only to allow nginx temp files
 
           port_mappings = [
             {
@@ -119,9 +120,9 @@ module "ecs" {
             }
           ]
 
-          # Health check
+          # Health check - use wget which is available in nginx:alpine
           health_check = {
-            command = ["CMD-SHELL", "curl -f http://localhost/ || exit 1"]
+            command = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/ || exit 1"]
           }
         }
       }
@@ -223,4 +224,80 @@ resource "aws_lb_listener" "web" {
     type             = "forward"
     target_group_arn = aws_lb_target_group.ecs.arn
   }
+}
+
+# VPC Endpoints for ECR (needed for ECS tasks to pull images)
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  vpc_id              = local.vpc_id
+  service_name        = "com.amazonaws.us-east-1.ecr.dkr"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = local.subnet_ids
+  security_group_ids  = [aws_security_group.vpc_endpoint.id]
+  private_dns_enabled = true
+
+  tags = merge(local.tags, {
+    Name = "${local.prefix}-ecr-dkr-endpoint"
+  })
+}
+
+resource "aws_vpc_endpoint" "ecr_api" {
+  vpc_id              = local.vpc_id
+  service_name        = "com.amazonaws.us-east-1.ecr.api"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = local.subnet_ids
+  security_group_ids  = [aws_security_group.vpc_endpoint.id]
+  private_dns_enabled = true
+
+  tags = merge(local.tags, {
+    Name = "${local.prefix}-ecr-api-endpoint"
+  })
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = local.vpc_id
+  service_name      = "com.amazonaws.us-east-1.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = [aws_route_table.public.id]
+
+  tags = merge(local.tags, {
+    Name = "${local.prefix}-s3-endpoint"
+  })
+}
+
+resource "aws_vpc_endpoint" "logs" {
+  vpc_id              = local.vpc_id
+  service_name        = "com.amazonaws.us-east-1.logs"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = local.subnet_ids
+  security_group_ids  = [aws_security_group.vpc_endpoint.id]
+  private_dns_enabled = true
+
+  tags = merge(local.tags, {
+    Name = "${local.prefix}-logs-endpoint"
+  })
+}
+
+# Security group for VPC endpoints
+resource "aws_security_group" "vpc_endpoint" {
+  name_prefix = "${local.prefix}-vpc-endpoint-"
+  description = "Security group for VPC endpoints"
+  vpc_id      = local.vpc_id
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [aws_vpc.main.cidr_block]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.tags, {
+    Name = "${local.prefix}-vpc-endpoint-sg"
+  })
 }

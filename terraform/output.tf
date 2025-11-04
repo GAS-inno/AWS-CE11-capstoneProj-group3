@@ -30,20 +30,20 @@ output "dynamodb_table_arn" {
 # Network Infrastructure Outputs
 # ==============================================
 
-# VPC & Network Outputs (using default VPC)
+# VPC & Network Outputs
 output "vpc_id" {
-  description = "ID of the default VPC"
-  value       = "Using default VPC - see ECS outputs for actual VPC ID"
+  description = "ID of the VPC"
+  value       = try(aws_vpc.main.id, "vpc_not_created")
 }
 
 output "vpc_cidr" {
-  description = "CIDR block of the default VPC"
-  value       = "Default VPC - see ECS outputs for actual CIDR"
+  description = "CIDR block of the VPC"
+  value       = try(aws_vpc.main.cidr_block, "cidr_not_available")
 }
 
 output "public_subnet_ids" {
-  description = "Default subnets used by ECS"
-  value       = "Default subnets - see ECS outputs for actual subnet IDs"
+  description = "Public subnets used by ECS"
+  value       = try(aws_subnet.public[*].id, [])
 }
 
 output "private_subnet_ids" {
@@ -95,23 +95,23 @@ output "ecs_service_name" {
 # ==============================================
 
 output "alb_dns_name" {
-  description = "Application Load Balancer DNS name (from ECS module)"
-  value       = try(module.ecs.load_balancer_dns_name, "alb_not_created")
+  description = "Application Load Balancer DNS name"
+  value       = try(aws_lb.main.dns_name, "alb_not_created")
 }
 
 output "alb_arn" {
-  description = "Application Load Balancer ARN (from ECS module)"
-  value       = try(module.ecs.load_balancer_arn, "alb_not_created")
+  description = "Application Load Balancer ARN"
+  value       = try(aws_lb.main.arn, "alb_not_created")
 }
 
 output "alb_zone_id" {
-  description = "Application Load Balancer hosted zone ID (from ECS module)"
-  value       = try(module.ecs.load_balancer_zone_id, "alb_not_created")
+  description = "Application Load Balancer hosted zone ID"
+  value       = try(aws_lb.main.zone_id, "alb_not_created")
 }
 
 output "target_group_arn" {
-  description = "Target group ARN for ECS service (from ECS module)"
-  value       = try(module.ecs.target_group_arns[0], "target_group_not_created")
+  description = "Target group ARN for ECS service"
+  value       = try(aws_lb_target_group.ecs.arn, "target_group_not_created")
 }
 
 # ==============================================
@@ -119,13 +119,13 @@ output "target_group_arn" {
 # ==============================================
 
 output "ecs_security_group_id" {
-  description = "Security group ID for ECS tasks (from ECS module)"
-  value       = try(module.ecs.service_security_group_id, "sg_not_created")
+  description = "Security group ID for ECS tasks"
+  value       = try(module.ecs_sg.security_group_id, "sg_not_created")
 }
 
 output "alb_security_group_id" {
-  description = "Security group ID for ALB (from ECS module)"
-  value       = try(module.ecs.load_balancer_security_group_id, "sg_not_created")
+  description = "Security group ID for ALB"
+  value       = try(module.alb_sg.security_group_id, "sg_not_created")
 }
 
 # ==============================================
@@ -134,7 +134,7 @@ output "alb_security_group_id" {
 
 output "application_url" {
   description = "Sky High Booker application URL"
-  value       = try("http://${module.ecs.load_balancer_dns_name}", "Application URL not available")
+  value       = try("http://${aws_lb.main.dns_name}", "Application URL not available")
 }
 
 output "health_check_url" {
