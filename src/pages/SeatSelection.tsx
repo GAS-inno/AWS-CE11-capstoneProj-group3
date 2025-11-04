@@ -51,12 +51,23 @@ const SeatSelection = () => {
 
     try {
       setLoading(true);
-      // TODO: Replace with AWS DynamoDB API call
-      console.log('TODO: Fetch occupied seats from DynamoDB for flight:', currentFlight, currentDate);
-      setOccupiedSeats([]);
+      const API_URL = 'https://3anzpwlae7.execute-api.us-east-1.amazonaws.com/prod';
+      
+      const response = await fetch(
+        `${API_URL}/bookings/occupied-seats?flight_id=${encodeURIComponent(currentFlight)}&departure_date=${encodeURIComponent(currentDate)}`
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch occupied seats');
+      }
+
+      const data = await response.json();
+      console.log('Occupied seats:', data);
+      setOccupiedSeats(data.occupied_seats || []);
     } catch (error) {
       console.error("Error fetching occupied seats:", error);
       toast.error("Could not load seat availability");
+      setOccupiedSeats([]); // Allow booking to continue even if API fails
     } finally {
       setLoading(false);
     }
@@ -85,9 +96,14 @@ const SeatSelection = () => {
       setSelectedSeats(selectedSeats.filter((s) => s !== seatLabel));
     } else {
       if (selectedSeats.length >= maxPassengers) {
-        toast.error(
-          `You can only select ${maxPassengers} seat${maxPassengers > 1 ? "s" : ""} for ${maxPassengers} passenger${maxPassengers > 1 ? "s" : ""}`,
-        );
+        // For single passenger, replace the seat instead of showing error
+        if (maxPassengers === 1) {
+          setSelectedSeats([seatLabel]);
+        } else {
+          toast.error(
+            `You can only select ${maxPassengers} seats for ${maxPassengers} passengers`,
+          );
+        }
         return;
       }
       setSelectedSeats([...selectedSeats, seatLabel]);

@@ -71,7 +71,7 @@ export const FlightCard = ({
       return;
     }
 
-    const flightData = {
+    const flightData: any = {
       flight: flightNumber,
       price: displayPrice,
       currency: currency.code,
@@ -81,28 +81,37 @@ export const FlightCard = ({
       depTime: departure.time,
       arrTime: arrival.time,
       duration: duration,
-      departureDate:
-        departureDate ||
-        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0], // Default to 7 days from now
     };
 
     if (outboundFlight) {
-      flightData.returnFlight = outboundFlight.flightNumber;
-      flightData.returnPrice = outboundDisplayPrice;
-      flightData.returnFrom = outboundFlight.departure.airport;
-      flightData.returnTo = outboundFlight.arrival.airport;
-      flightData.returnDepTime = outboundFlight.departure.time;
-      flightData.returnArrTime = outboundFlight.arrival.time;
-      flightData.returnDuration = outboundFlight.duration;
+      // Round-trip: setting return flight details
+      flightData.returnFlight = flightNumber;  // Current flight is the return
+      flightData.returnPrice = displayPrice;
+      flightData.returnFrom = departure.airport;  // Current flight's departure
+      flightData.returnTo = arrival.airport;      // Current flight's arrival
+      flightData.returnDepTime = departure.time;  // Current flight's departure time
+      flightData.returnArrTime = arrival.time;    // Current flight's arrival time
+      flightData.returnDuration = duration;
       flightData.totalPrice = totalPrice;
-      flightData.returnDepartureDate =
-        departureDate ||
+      flightData.returnDepartureDate = departureDate ||
         new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
           .toISOString()
           .split("T")[0]; // Default to 14 days from now
+      // Outbound flight details from the previously selected flight
+      flightData.flight = outboundFlight.flightNumber;
+      flightData.price = outboundDisplayPrice;
+      flightData.from = outboundFlight.departure.airport;
+      flightData.to = outboundFlight.arrival.airport;
+      flightData.depTime = outboundFlight.departure.time;
+      flightData.arrTime = outboundFlight.arrival.time;
       flightData.outboundDepartureDate = outboundDepartureDate;
+    } else {
+      // One-way: use departureDate
+      flightData.departureDate =
+        departureDate ||
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0]; // Default to 7 days from now
     }
 
     const params = new URLSearchParams(flightData).toString();

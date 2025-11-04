@@ -20,11 +20,17 @@ const authSchema = z.object({
     .string()
     .min(6, { message: "Password must be at least 6 characters" })
     .max(100),
-  fullName: z
+  firstName: z
     .string()
     .trim()
-    .min(2, { message: "Name must be at least 2 characters" })
-    .max(100)
+    .min(1, { message: "First name is required" })
+    .max(50)
+    .optional(),
+  lastName: z
+    .string()
+    .trim()
+    .min(1, { message: "Last name is required" })
+    .max(50)
     .optional(),
 });
 
@@ -32,9 +38,12 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp, user } = useAuth();
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const { signIn, signUp, confirmSignUp, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,7 +60,7 @@ const Auth = () => {
       // Validate input
       const validationData = isLogin
         ? { email, password }
-        : { email, password, fullName };
+        : { email, password, firstName, lastName };
 
       authSchema.parse(validationData);
 
@@ -70,7 +79,7 @@ const Auth = () => {
           navigate("/");
         }
       } else {
-        const { error } = await signUp(email, password, fullName);
+        const { error, requiresVerification } = await signUp(email, password, firstName, lastName);
         if (error) {
           if (error.includes("already registered")) {
             toast.error(
@@ -81,6 +90,9 @@ const Auth = () => {
           } else {
             toast.error(error);
           }
+        } else if (requiresVerification) {
+          toast.success("Verification code sent to your email!");
+          setShowVerification(true);
         } else {
           toast.success("Account created successfully! Welcome aboard!");
           navigate("/");
@@ -94,6 +106,28 @@ const Auth = () => {
       } else {
         toast.error("An unexpected error occurred");
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { error } = await confirmSignUp(email, verificationCode);
+      
+      if (error) {
+        toast.error(error);
+      } else {
+        toast.success("Email verified successfully! You can now sign in.");
+        setShowVerification(false);
+        setIsLogin(true);
+        setVerificationCode("");
+      }
+    } catch (error) {
+      toast.error("Failed to verify code");
     } finally {
       setLoading(false);
     }
@@ -114,27 +148,89 @@ const Auth = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>{isLogin ? "Sign In" : "Create Account"}</CardTitle>
+            <CardTitle>
+              {showVerification 
+                ? "Verify Your Email" 
+                : isLogin 
+                  ? "Sign In" 
+                  : "Create Account"}
+            </CardTitle>
             <CardDescription>
-              {isLogin
-                ? "Welcome back! Sign in to continue your journey"
-                : "Join SkyWings Airlines and start your adventure"}
+              {showVerification
+                ? "Enter the verification code sent to your email"
+                : isLogin
+                  ? "Welcome back! Sign in to continue your journey"
+                  : "Join SkyWings Airlines and start your adventure"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
+            {showVerification ? (
+              <form onSubmit={handleVerification} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Full Name</label>
+                  <label className="text-sm font-medium">Verification Code</label>
                   <Input
                     type="text"
-                    placeholder="John Doe"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required={!isLogin}
-                    maxLength={100}
+                    placeholder="Enter 6-digit code"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    required
+                    maxLength={6}
+                    pattern="[0-9]*"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Check your email ({email}) for the verification code
+                  </p>
                 </div>
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  size="lg"
+                  disabled={loading}
+                >
+                  {loading ? "Verifying..." : "Verify Email"}
+                </Button>
+
+                <div className="text-center text-sm">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowVerification(false);
+                      setVerificationCode("");
+                    }}
+                    className="text-primary hover:underline font-medium"
+                  >
+                    Back to Sign Up
+                  </button>
+                </div>
+              </form>
+            ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {!isLogin && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">First Name</label>
+                    <Input
+                      type="text"
+                      placeholder="John"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required={!isLogin}
+                      maxLength={50}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Last Name</label>
+                    <Input
+                      type="text"
+                      placeholder="Doe"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required={!isLogin}
+                      maxLength={50}
+                    />
+                  </div>
+                </>
               )}
 
               <div className="space-y-2">
@@ -190,6 +286,7 @@ const Auth = () => {
                 </button>
               </div>
             </form>
+            )}
           </CardContent>
         </Card>
 

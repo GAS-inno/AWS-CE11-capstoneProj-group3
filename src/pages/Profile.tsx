@@ -1,44 +1,13 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plane, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/contexts/AWSAuthContext";
-import { toast } from "sonner";
-
-interface Profile {
-  full_name: string;
-  phone: string;
-  date_of_birth: string;
-  passport_number: string;
-  frequent_flyer_number: string;
-}
 
 const Profile = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState<Profile>({
-    full_name: "",
-    phone: "",
-    date_of_birth: "",
-    passport_number: "",
-    frequent_flyer_number: "",
-  });
-
-  const fetchProfile = useCallback(async () => {
-    try {
-      // TODO: Replace with AWS DynamoDB API call
-      console.log('TODO: Fetch profile from DynamoDB for user:', user?.id);
-      // Leave profile empty for now
-    } catch (error) {
-      toast.error("Error loading profile");
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -46,28 +15,7 @@ const Profile = () => {
     }
   }, [user, authLoading, navigate]);
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    }
-  }, [user, fetchProfile]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-
-    try {
-      // TODO: Replace with AWS DynamoDB API call
-      console.log('TODO: Update profile in DynamoDB for user:', user?.id, profile);
-      toast.success("Profile updated successfully");
-    } catch (error) {
-      toast.error("Error updating profile");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading || authLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -101,97 +49,29 @@ const Profile = () => {
               <CardTitle>Personal Information</CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Email</label>
-                  <Input
-                    type="email"
-                    value={user?.email || ""}
-                    disabled
-                    className="bg-muted"
-                  />
+                  <label className="text-sm font-medium text-muted-foreground">Email</label>
+                  <p className="text-base">{user?.email || "Not available"}</p>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Full Name</label>
-                  <Input
-                    type="text"
-                    value={profile.full_name}
-                    onChange={(e) =>
-                      setProfile({ ...profile, full_name: e.target.value })
-                    }
-                    placeholder="John Doe"
-                    maxLength={100}
-                  />
+                  <label className="text-sm font-medium text-muted-foreground">First Name</label>
+                  <p className="text-base">{user?.firstName || "Not set"}</p>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Phone Number</label>
-                  <Input
-                    type="tel"
-                    value={profile.phone}
-                    onChange={(e) =>
-                      setProfile({ ...profile, phone: e.target.value })
-                    }
-                    placeholder="+1 234 567 8900"
-                    maxLength={20}
-                  />
+                  <label className="text-sm font-medium text-muted-foreground">Last Name</label>
+                  <p className="text-base">{user?.lastName || "Not set"}</p>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Date of Birth</label>
-                  <Input
-                    type="date"
-                    value={profile.date_of_birth}
-                    onChange={(e) =>
-                      setProfile({ ...profile, date_of_birth: e.target.value })
-                    }
-                  />
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Account information is managed through your authentication provider.
+                    To update your details, please contact support.
+                  </p>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Passport Number</label>
-                  <Input
-                    type="text"
-                    value={profile.passport_number}
-                    onChange={(e) =>
-                      setProfile({
-                        ...profile,
-                        passport_number: e.target.value,
-                      })
-                    }
-                    placeholder="A12345678"
-                    maxLength={20}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Frequent Flyer Number
-                  </label>
-                  <Input
-                    type="text"
-                    value={profile.frequent_flyer_number}
-                    onChange={(e) =>
-                      setProfile({
-                        ...profile,
-                        frequent_flyer_number: e.target.value,
-                      })
-                    }
-                    placeholder="SW123456789"
-                    maxLength={20}
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  size="lg"
-                  disabled={saving}
-                >
-                  {saving ? "Saving..." : "Save Changes"}
-                </Button>
-              </form>
+              </div>
             </CardContent>
           </Card>
         </div>

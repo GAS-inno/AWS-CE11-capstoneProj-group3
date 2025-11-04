@@ -112,11 +112,31 @@ module "ecs" {
             }
           ]
 
-          # Basic environment - resource IDs will be updated after deployment
+          # Environment variables for AWS services
           environment = [
             {
               name  = "AWS_DEFAULT_REGION"
               value = "us-east-1"
+            },
+            {
+              name  = "VITE_AWS_REGION"
+              value = "us-east-1"
+            },
+            {
+              name  = "VITE_AWS_USER_POOL_ID"
+              value = aws_cognito_user_pool.user_pool.id
+            },
+            {
+              name  = "VITE_AWS_USER_POOL_CLIENT_ID"
+              value = aws_cognito_user_pool_client.user_pool_client.id
+            },
+            {
+              name  = "VITE_AWS_API_GATEWAY_URL"
+              value = "https://${aws_api_gateway_rest_api.booking_api.id}.execute-api.us-east-1.amazonaws.com/prod"
+            },
+            {
+              name  = "VITE_AWS_S3_BUCKET"
+              value = aws_s3_bucket.app_storage.id
             }
           ]
 

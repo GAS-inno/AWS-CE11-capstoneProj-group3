@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { signUp, signIn, signOut, getCurrentUser, fetchUserAttributes } from '@aws-amplify/auth'
+import { signUp, signIn, signOut, getCurrentUser, fetchUserAttributes, confirmSignUp } from '@aws-amplify/auth'
 import type { AuthUser, SignUpInput, SignInInput } from '@aws-amplify/auth'
 import { configureAWS } from '@/lib/aws-config'
 
@@ -17,7 +17,8 @@ export interface User {
 interface AuthContextType {
   user: User | null
   loading: boolean
-  signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ success: boolean; error?: string }>
+  signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ success: boolean; error?: string; requiresVerification?: boolean }>
+  confirmSignUp: (email: string, code: string) => Promise<{ success: boolean; error?: string }>
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
   signOut: () => Promise<{ success: boolean; error?: string }>
   isAuthenticated: boolean
@@ -98,7 +99,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     password: string,
     firstName?: string,
     lastName?: string
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<{ success: boolean; error?: string; requiresVerification?: boolean }> => {
     try {
       const signUpInput: SignUpInput = {
         username: email,
@@ -119,7 +120,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
         return { 
           success: true, 
-          error: 'Please check your email for a confirmation code to complete registration.' 
+          requiresVerification: true
         }
       } else {
         return { success: false, error: 'Sign up requires additional steps' }
@@ -127,6 +128,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: unknown) {
       console.error('Sign up error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to create account. Please try again.'
+      return { 
+        success: false, 
+        error: errorMessage
+      }
+    }
+  }
+
+  // Confirm sign up function
+  const handleConfirmSignUp = async (
+    email: string,
+    code: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await confirmSignUp({
+        username: email,
+        confirmationCode: code
+      })
+      return { success: true }
+    } catch (error: unknown) {
+      console.error('Confirmation error:', error)
+      
+      let errorMessage = 'Failed to verify code. Please try again.'
+      
+      if (error && typeof error === 'object' && 'name' in error) {
+        const authError = error as { name: string; message?: string }
+        if (authError.name === 'CodeMismatchException') {
+          errorMessage = 'Invalid verification code. Please check and try again.'
+        } else if (authError.name === 'ExpiredCodeException') {
+          errorMessage = 'Verification code has expired. Please request a new one.'
+        } else if (authError.name === 'NotAuthorizedException') {
+          errorMessage = 'User is already confirmed.'
+        }
+      }
+      
       return { 
         success: false, 
         error: errorMessage
@@ -202,6 +237,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     loading,
     signUp: handleSignUp,
+    confirmSignUp: handleConfirmSignUp,
     signIn: handleSignIn,
     signOut: handleSignOut,
     isAuthenticated,

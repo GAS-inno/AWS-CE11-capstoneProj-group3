@@ -39,18 +39,24 @@ interface FlightSearchFormProps {
 }
 
 export const FlightSearchForm = ({ onSearch }: FlightSearchFormProps) => {
-  const [searchData, setSearchData] = useState({
-    from: "",
-    to: "",
-    departDate: "",
-    returnDate: "",
-    passengers: "1",
-    tripType: "round-trip" as "one-way" | "round-trip",
-  });
-
   const getTodayDate = () => {
     return new Date().toISOString().split("T")[0];
   };
+
+  const getNextWeekDate = () => {
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    return nextWeek.toISOString().split("T")[0];
+  };
+
+  const [searchData, setSearchData] = useState({
+    from: "",
+    to: "",
+    departDate: getTodayDate(),
+    returnDate: getNextWeekDate(),
+    passengers: "1",
+    tripType: "round-trip" as "one-way" | "round-trip",
+  });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

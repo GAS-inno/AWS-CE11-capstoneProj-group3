@@ -45,15 +45,79 @@ const Confirmation = () => {
 
   const saveBooking = useCallback(async () => {
     try {
-      // TODO: Implement with AWS DynamoDB API
-      // Generate booking reference
-      const reference = `SW${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      setBookingReference(reference);
-
       // Save booking if user is logged in
       if (user) {
-        console.log('TODO: Save booking to DynamoDB', { user, reference });
-        // Supabase code commented out - to be replaced with DynamoDB calls
+        const API_URL = 'https://3anzpwlae7.execute-api.us-east-1.amazonaws.com/prod';
+        
+        // Create booking data
+        const bookingData = {
+          user_id: user.id,
+          flight_id: flightNumber,
+          passenger_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+          passenger_email: user.email,
+          seat_number: seats,
+          total_amount: parseFloat(totalPrice),
+          booking_status: 'confirmed',
+          flight_details: {
+            from,
+            to,
+            departure_time: depTime,
+            arrival_time: arrTime,
+            flight_number: flightNumber,
+            departure_date: outboundDepartureDate || departureDate,
+            passengers,
+            currency: currencyCode,
+            base_price: parseFloat(basePrice),
+            seat_price: parseFloat(seatPrice)
+          },
+          ...(isRoundTrip && returnFlightNumber && {
+            return_flight_id: returnFlightNumber,
+            return_seat_number: returnSeats,
+            return_flight_details: {
+              from: to,  // Return flight: from destination back to origin
+              to: from,
+              departure_time: returnDepTime,
+              arrival_time: returnArrTime,
+              flight_number: returnFlightNumber,
+              departure_date: returnDepartureDate,
+              passengers,
+              currency: currencyCode,
+              base_price: parseFloat(returnPrice),
+              seat_price: parseFloat(returnSeatPrice)
+            }
+          })
+        };
+
+        console.log('Saving booking to DynamoDB:', bookingData);
+
+        const response = await fetch(`${API_URL}/bookings`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(bookingData)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to save booking');
+        }
+
+        const result = await response.json();
+        console.log('Booking saved successfully:', result);
+        
+        // Use the booking ID from the response as the reference
+        if (result.booking && result.booking.id) {
+          setBookingReference(result.booking.id.substring(0, 8).toUpperCase());
+        } else {
+          // Fallback if response structure is different
+          setBookingReference(`SW${Math.random().toString(36).substring(2, 8).toUpperCase()}`);
+        }
+        
+        toast.success('Booking saved to your account!');
+      } else {
+        // Guest booking - generate random reference
+        setBookingReference(`SW${Math.random().toString(36).substring(2, 8).toUpperCase()}`);
       }
     } catch (error) {
       console.error("Error saving booking:", error);

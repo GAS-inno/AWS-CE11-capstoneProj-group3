@@ -10,6 +10,7 @@ import {
   MapPin,
   Users,
   CreditCard,
+  Armchair,
 } from "lucide-react";
 import {
   Popover,
@@ -34,6 +35,14 @@ interface Booking {
   currency: string;
   status: string;
   created_at: string;
+  // Return flight fields
+  return_flight_number?: string;
+  return_departure_airport?: string;
+  return_arrival_airport?: string;
+  return_departure_time?: string;
+  return_arrival_time?: string;
+  return_departure_date?: string;
+  return_seats?: string[];
 }
 
 const MyBookings = () => {
@@ -50,10 +59,53 @@ const MyBookings = () => {
 
   const fetchBookings = useCallback(async () => {
     try {
-      // TODO: Replace with AWS DynamoDB API call
-      console.log('TODO: Fetch bookings from DynamoDB for user:', user?.id);
-      setBookings([]);
+      if (!user?.id) {
+        setBookings([]);
+        setLoading(false);
+        return;
+      }
+
+      const API_URL = 'https://3anzpwlae7.execute-api.us-east-1.amazonaws.com/prod';
+      const response = await fetch(`${API_URL}/bookings?user_id=${user.id}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch bookings');
+      }
+
+      const data = await response.json();
+      console.log('Fetched bookings:', data);
+      
+      // Transform the API response to match the Booking interface
+      const transformedBookings = data.bookings.map((booking: any) => ({
+        id: booking.id,
+        booking_reference: booking.id.substring(0, 8).toUpperCase(),
+        flight_number: booking.flight_id,
+        departure_airport: booking.flight_details?.from || 'N/A',
+        arrival_airport: booking.flight_details?.to || 'N/A',
+        departure_time: booking.flight_details?.departure_time || 'N/A',
+        arrival_time: booking.flight_details?.arrival_time || 'N/A',
+        departure_date: booking.flight_details?.departure_date || 'N/A',
+        passengers: booking.flight_details?.passengers || 1,
+        seats: booking.seat_number ? [booking.seat_number] : [],
+        total_price: booking.total_amount,
+        currency: booking.flight_details?.currency || 'USD',
+        status: booking.booking_status,
+        created_at: booking.created_at,
+        // Return flight details if it's a round trip
+        ...(booking.return_flight_id && {
+          return_flight_number: booking.return_flight_id,
+          return_departure_airport: booking.return_flight_details?.from || booking.flight_details?.to || 'N/A',
+          return_arrival_airport: booking.return_flight_details?.to || booking.flight_details?.from || 'N/A',
+          return_departure_time: booking.return_flight_details?.departure_time || 'N/A',
+          return_arrival_time: booking.return_flight_details?.arrival_time || 'N/A',
+          return_departure_date: booking.return_flight_details?.departure_date || 'N/A',
+          return_seats: booking.return_seat_number ? [booking.return_seat_number] : []
+        })
+      }));
+      
+      setBookings(transformedBookings);
     } catch (error) {
+      console.error('Error loading bookings:', error);
       toast.error("Error loading bookings");
     } finally {
       setLoading(false);
@@ -124,9 +176,13 @@ const MyBookings = () => {
                         <CardTitle className="text-xl mb-1">
                           {booking.departure_airport} →{" "}
                           {booking.arrival_airport}
+                          {booking.return_flight_number && (
+                            <span className="text-muted-foreground"> (Round Trip)</span>
+                          )}
                         </CardTitle>
                         <p className="text-sm text-muted-foreground">
                           Flight {booking.flight_number}
+                          {booking.return_flight_number && `, ${booking.return_flight_number}`}
                         </p>
                       </div>
                       <Badge
@@ -141,37 +197,8 @@ const MyBookings = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex items-start gap-3">
-                        <Calendar className="w-5 h-5 text-primary mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium">Departure</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(
-                              booking.departure_date,
-                            ).toLocaleDateString("en-US", {
-                              weekday: "short",
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                            })}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {booking.departure_time}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3">
-                        <MapPin className="w-5 h-5 text-primary mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium">Arrival</p>
-                          <p className="text-sm text-muted-foreground">
-                            {booking.arrival_time}
-                          </p>
-                        </div>
-                      </div>
-
+                    {/* Passengers Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b">
                       <div className="flex items-start gap-3">
                         <Users className="w-5 h-5 text-primary mt-0.5" />
                         <div>
@@ -181,9 +208,6 @@ const MyBookings = () => {
                             {booking.passengers === 1
                               ? "passenger"
                               : "passengers"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Seats: {booking.seats.join(", ")}
                           </p>
                         </div>
                       </div>
@@ -204,6 +228,104 @@ const MyBookings = () => {
                         </div>
                       </div>
                     </div>
+
+                    {/* Outbound Flight */}
+                    <div>
+                      <h4 className="text-sm font-semibold mb-2 text-primary">
+                        Outbound Flight
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-start gap-3">
+                          <Calendar className="w-5 h-5 text-primary mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium">Departure</p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(
+                                booking.departure_date,
+                              ).toLocaleDateString("en-US", {
+                                weekday: "short",
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {booking.departure_time}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                          <MapPin className="w-5 h-5 text-primary mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium">Arrival</p>
+                            <p className="text-sm text-muted-foreground">
+                              {booking.arrival_time}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-3">
+                          <Armchair className="w-5 h-5 text-primary mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium">Seats</p>
+                            <p className="text-sm text-muted-foreground">
+                              {booking.seats.join(", ")}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Return Flight */}
+                    {booking.return_flight_number && (
+                      <div className="pt-4 border-t">
+                        <h4 className="text-sm font-semibold mb-2 text-primary">
+                          Return Flight
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex items-start gap-3">
+                            <Calendar className="w-5 h-5 text-primary mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium">Departure</p>
+                              <p className="text-sm text-muted-foreground">
+                                {booking.return_departure_date !== 'N/A' && new Date(
+                                  booking.return_departure_date,
+                                ).toLocaleDateString("en-US", {
+                                  weekday: "short",
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {booking.return_departure_time}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-3">
+                            <MapPin className="w-5 h-5 text-primary mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium">Arrival</p>
+                              <p className="text-sm text-muted-foreground">
+                                {booking.return_arrival_time}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-3">
+                            <Armchair className="w-5 h-5 text-primary mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium">Seats</p>
+                              <p className="text-sm text-muted-foreground">
+                                {booking.return_seats?.join(", ")}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="pt-4 border-t">
                       <div>
