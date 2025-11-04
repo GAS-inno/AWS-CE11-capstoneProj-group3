@@ -63,19 +63,6 @@ variable "project_name" {
   default     = "sky-high-booker"
 }
 
-variable "supabase_url" {
-  description = "Supabase project URL"
-  type        = string
-  default     = ""
-}
-
-variable "supabase_anon_key" {
-  description = "Supabase anonymous key"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
 variable "ecs_desired_count" {
   description = "Desired number of ECS tasks"
   type        = number

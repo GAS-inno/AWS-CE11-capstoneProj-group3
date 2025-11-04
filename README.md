@@ -15,15 +15,15 @@
 - 💳 **Secure Booking** - Complete booking process with payment integration
 - 📱 **Responsive Design** - Optimized for desktop and mobile devices
 - 🎨 **Modern UI** - Built with shadcn/ui components and Tailwind CSS
-- 🔐 **Authentication** - User registration and login with Supabase
+- 🔐 **Authentication** - User registration and login with AWS Cognito
 - 📊 **Dashboard** - User dashboard to manage bookings and profile
 
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   React App     │────│   AWS ECS        │────│   Supabase      │
-│   (Frontend)    │    │   (Container)    │    │   (Database)    │
+│   React App     │────│   AWS ECS        │────│   AWS Cognito   │
+│   (Frontend)    │    │   (Container)    │    │   (Auth)        │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
           │                       │                       │
           │                       │                       │
@@ -53,7 +53,7 @@ cd AWS-CE11-capstoneProj-group3
 # Or manual setup:
 npm install
 cp .env.example .env
-# Edit .env with your Supabase credentials
+# Edit .env with your AWS Cognito credentials
 npm run dev
 ```
 
@@ -107,8 +107,10 @@ sky-high-booker/
 - **React Hook Form** for form management
 
 ### **Backend & Database**
-- **Supabase** (PostgreSQL + Authentication + Real-time)
-- **Row Level Security** for data protection
+- **AWS Lambda** (Node.js) for serverless API functions
+- **Amazon DynamoDB** for NoSQL database
+- **AWS Cognito** for user authentication
+- **API Gateway** for REST API management
 
 ### **Infrastructure**
 - **AWS ECS Fargate** for container orchestration
@@ -224,8 +226,8 @@ npm run test:e2e
 
 ## 🔒 Security
 
-- **Authentication**: Supabase Auth with email/password
-- **Authorization**: Row Level Security (RLS) policies
+- **Authentication**: AWS Cognito with email/password
+- **Authorization**: IAM policies and Cognito user pools
 - **Data Protection**: HTTPS everywhere, secure headers
 - **Container Security**: Non-root user, minimal base image
 - **Infrastructure**: Private subnets, security groups, IAM roles
@@ -264,7 +266,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Development Team**: CE11 Group 3
 - **Infrastructure**: AWS ECS Fargate with Terraform
 - **Frontend**: React + TypeScript + Tailwind CSS
-- **Backend**: Supabase (PostgreSQL + Auth)
+- **Backend**: AWS Lambda + DynamoDB + Cognito
 
 ## 🔗 Links
 
@@ -288,8 +290,6 @@ For questions, issues, or contributions:
 **Sky High Booker** - Elevating your flight booking experience! ✈️
 
 *Built with ❤️ by CE11 Group 3*
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
 
 ## Available Scripts
 

@@ -170,8 +170,8 @@ playwright-report/
 coverage/
 .nyc_output/
 
-# Supabase
-.supabase/
+# macOS
+.DS_Store
 
 # Build tools
 .turbo/

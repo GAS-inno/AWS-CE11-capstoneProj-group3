@@ -283,17 +283,19 @@ sequenceDiagram
 
 **✅ All your application data is stored securely in AWS:**
 
+
 1. **User accounts & auth** → Cognito User Pool
-2. **Flight & booking data** → RDS PostgreSQL  
-3. **Payment records** → RDS PostgreSQL
-4. **Files & documents** → S3 bucket
+2. **Flight & booking data** → DynamoDB
+3. **Payment records** → Not stored (simulated only for demo)
+4. **Files & documents** → S3 bucket (if needed)
 5. **Session data** → Cognito (temporary)
 
-**✅ Benefits over Supabase:**
+**✅ Benefits of AWS Native Architecture:**
 - Better security isolation (VPC)
 - More granular access control (IAM)
-- Better backup & disaster recovery
-- Lower costs for your scale
+- Serverless scalability with DynamoDB
 - Better integration with other AWS services
+- Pay-per-use pricing model
 
 Your data is enterprise-grade secure and ready to scale! 🚀
+```

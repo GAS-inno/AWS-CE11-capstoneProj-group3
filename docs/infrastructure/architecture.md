@@ -16,8 +16,8 @@ Sky High Booker uses a **serverless container architecture** built on AWS ECS Fa
 ### **High-Level Architecture**
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   CloudFront    │────│  Application     │────│     Supabase    │
-│   (Optional)    │    │  Load Balancer   │    │   (External)    │
+│   CloudFront    │────│  Application     │────│  AWS Cognito    │
+│   (Optional)    │    │  Load Balancer   │    │    + Lambda     │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
                                 │
                                 ▼
@@ -486,7 +486,7 @@ resource "aws_iam_role" "ecs_task_execution" {
 ### **Recovery Procedures**
 1. **Service Failure**: ECS auto-recovery and health checks
 2. **Infrastructure Failure**: Terraform re-deployment
-3. **Data Loss**: Supabase handles database backups
+3. **Data Loss**: DynamoDB point-in-time recovery (if enabled)
 4. **Region Failure**: Manual deployment to different region
 
 ## 📋 Maintenance Tasks

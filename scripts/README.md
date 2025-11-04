@@ -82,7 +82,7 @@ Production-ready Nginx configuration for serving the React application:
 Runtime environment variable injection script:
 - Replaces placeholder values in built application
 - Supports dynamic configuration without rebuild
-- Handles Supabase and other external service URLs
+- Handles AWS Cognito and API Gateway URLs
 
 ## 📋 Usage Examples
 
@@ -129,9 +129,10 @@ ECR_REPOSITORY=ce11g3-sky-high-booker
 ECS_CLUSTER=ce11g3-sky-high-booker-cluster
 ECS_SERVICE=ce11g3-sky-high-booker-cluster-sky-high-booker
 
-# Supabase Configuration
-VITE_SUPABASE_URL=your-supabase-url
-VITE_SUPABASE_ANON_KEY=your-supabase-key
+# AWS Cognito Configuration
+VITE_COGNITO_USER_POOL_ID=your-user-pool-id
+VITE_COGNITO_CLIENT_ID=your-client-id
+VITE_AWS_REGION=us-east-1
 ```
 
 ### **Script Modification**
