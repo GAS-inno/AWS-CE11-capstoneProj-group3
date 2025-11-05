@@ -33,29 +33,35 @@
     └───────────┘          └─────────────┘         └─────────────┘
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
-### **Prerequisites**
-- Node.js 18+ and npm
-- Docker (for containerization)
-- AWS CLI (for deployment)
-- Git
+### **🚨 New Repository Setup**
+For first-time setup or new developers:
 
-### **Development Setup**
 ```bash
-# Clone the repository
-git clone https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3.git
+git clone <repository-url>
 cd AWS-CE11-capstoneProj-group3
 
-# Quick start (automated setup)
-./scripts/dev.sh
+# Automated setup (handles all dependencies)
+./scripts/setup.sh
+```
 
-# Or manual setup:
+### **🔄 Existing Infrastructure**
+If infrastructure already exists:
+
+```bash
+# Frontend development only
 npm install
 cp .env.example .env
-# Edit .env with your AWS Cognito credentials
+# Edit .env with current AWS environment variables
 npm run dev
+
+# Or infrastructure changes
+cd terraform
+terraform apply
 ```
+
+**⚠️ Important**: See `SETUP.md` for detailed dependency information.
 
 ## 📁 Project Structure
 

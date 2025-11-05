@@ -1,10 +1,19 @@
 # Lambda Functions for Bookings API
 
+# Ensure lambda-packages directory exists
+resource "null_resource" "create_lambda_packages_dir" {
+  provisioner "local-exec" {
+    command = "mkdir -p ${path.module}/../lambda-packages"
+  }
+}
+
 # Data source to create deployment package
 data "archive_file" "lambda_booking_package" {
   type        = "zip"
   source_dir  = "${path.module}/../lambda/bookings"
   output_path = "${path.module}/../lambda-packages/bookings.zip"
+  
+  depends_on = [null_resource.create_lambda_packages_dir]
 }
 
 # Lambda Function: Create Booking
