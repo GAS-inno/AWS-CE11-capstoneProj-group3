@@ -47,7 +47,7 @@ const Confirmation = () => {
     try {
       // Save booking if user is logged in
       if (user) {
-        const API_URL = 'https://3anzpwlae7.execute-api.us-east-1.amazonaws.com/prod';
+        const API_URL = import.meta.env.VITE_AWS_API_GATEWAY_URL || 'VITE_AWS_API_GATEWAY_URL_PLACEHOLDER';
         
         // Create booking data
         const bookingData = {

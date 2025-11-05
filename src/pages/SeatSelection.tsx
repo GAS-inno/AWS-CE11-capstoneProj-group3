@@ -51,7 +51,7 @@ const SeatSelection = () => {
 
     try {
       setLoading(true);
-      const API_URL = 'https://3anzpwlae7.execute-api.us-east-1.amazonaws.com/prod';
+      const API_URL = import.meta.env.VITE_AWS_API_GATEWAY_URL || 'VITE_AWS_API_GATEWAY_URL_PLACEHOLDER';
       
       const response = await fetch(
         `${API_URL}/bookings/occupied-seats?flight_id=${encodeURIComponent(currentFlight)}&departure_date=${encodeURIComponent(currentDate)}`

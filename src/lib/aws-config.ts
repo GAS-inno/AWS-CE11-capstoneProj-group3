@@ -3,8 +3,8 @@ import { Amplify } from 'aws-amplify'
 const amplifyConfig = {
   Auth: {
     Cognito: {
-      userPoolId: import.meta.env.VITE_AWS_USER_POOL_ID || '',
-      userPoolClientId: import.meta.env.VITE_AWS_USER_POOL_CLIENT_ID || '',
+      userPoolId: import.meta.env.VITE_AWS_USER_POOL_ID || 'VITE_AWS_USER_POOL_ID_PLACEHOLDER',
+      userPoolClientId: import.meta.env.VITE_AWS_USER_POOL_CLIENT_ID || 'VITE_AWS_USER_POOL_CLIENT_ID_PLACEHOLDER',
       loginWith: {
         email: true,
         username: false,
@@ -35,8 +35,8 @@ const amplifyConfig = {
   API: {
     REST: {
       BookingAPI: {
-        endpoint: import.meta.env.VITE_AWS_API_GATEWAY_URL || '',
-        region: import.meta.env.VITE_AWS_REGION || 'us-east-1',
+        endpoint: import.meta.env.VITE_AWS_API_GATEWAY_URL || 'VITE_AWS_API_GATEWAY_URL_PLACEHOLDER',
+        region: import.meta.env.VITE_AWS_REGION || 'VITE_AWS_REGION_PLACEHOLDER',
       },
     },
   },
