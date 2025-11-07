@@ -19,7 +19,7 @@ terraform {
   # S3 Backend for state storage
   backend "s3" {
     bucket = "sctp-ce11-tfstate"
-    key    = "sky-high-booker/terraform.tfstate"
+    key    = "ce11g3.tfstate"
     region = "us-east-1"
   }
 

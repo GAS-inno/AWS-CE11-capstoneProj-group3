@@ -12,7 +12,7 @@ data "archive_file" "lambda_booking_package" {
   type        = "zip"
   source_dir  = "${path.module}/../lambda/bookings"
   output_path = "${path.module}/../lambda-packages/bookings.zip"
-  
+
   depends_on = [null_resource.create_lambda_packages_dir]
 }
 
@@ -20,17 +20,16 @@ data "archive_file" "lambda_booking_package" {
 resource "aws_lambda_function" "create_booking" {
   filename         = data.archive_file.lambda_booking_package.output_path
   function_name    = "${local.prefix}-createBooking"
-  role            = aws_iam_role.lambda_booking_role.arn
-  handler         = "createBooking.handler"
+  role             = aws_iam_role.lambda_booking_role.arn
+  handler          = "createBooking.handler"
   source_code_hash = data.archive_file.lambda_booking_package.output_base64sha256
-  runtime         = "nodejs18.x"
-  timeout         = 30
-  memory_size     = 256
+  runtime          = "nodejs18.x"
+  timeout          = 30
+  memory_size      = 256
 
   environment {
     variables = {
       BOOKINGS_TABLE = aws_dynamodb_table.bookings.name
-      FLIGHTS_TABLE  = aws_dynamodb_table.flights.name
     }
   }
 
@@ -47,12 +46,12 @@ resource "aws_lambda_function" "create_booking" {
 resource "aws_lambda_function" "get_bookings" {
   filename         = data.archive_file.lambda_booking_package.output_path
   function_name    = "${local.prefix}-getBookings"
-  role            = aws_iam_role.lambda_booking_role.arn
-  handler         = "getBookings.handler"
+  role             = aws_iam_role.lambda_booking_role.arn
+  handler          = "getBookings.handler"
   source_code_hash = data.archive_file.lambda_booking_package.output_base64sha256
-  runtime         = "nodejs18.x"
-  timeout         = 30
-  memory_size     = 256
+  runtime          = "nodejs18.x"
+  timeout          = 30
+  memory_size      = 256
 
   environment {
     variables = {
@@ -73,12 +72,12 @@ resource "aws_lambda_function" "get_bookings" {
 resource "aws_lambda_function" "get_booking_by_id" {
   filename         = data.archive_file.lambda_booking_package.output_path
   function_name    = "${local.prefix}-getBookingById"
-  role            = aws_iam_role.lambda_booking_role.arn
-  handler         = "getBookingById.handler"
+  role             = aws_iam_role.lambda_booking_role.arn
+  handler          = "getBookingById.handler"
   source_code_hash = data.archive_file.lambda_booking_package.output_base64sha256
-  runtime         = "nodejs18.x"
-  timeout         = 30
-  memory_size     = 256
+  runtime          = "nodejs18.x"
+  timeout          = 30
+  memory_size      = 256
 
   environment {
     variables = {
@@ -99,12 +98,12 @@ resource "aws_lambda_function" "get_booking_by_id" {
 resource "aws_lambda_function" "get_occupied_seats" {
   filename         = data.archive_file.lambda_booking_package.output_path
   function_name    = "${local.prefix}-getOccupiedSeats"
-  role            = aws_iam_role.lambda_booking_role.arn
-  handler         = "getOccupiedSeats.handler"
+  role             = aws_iam_role.lambda_booking_role.arn
+  handler          = "getOccupiedSeats.handler"
   source_code_hash = data.archive_file.lambda_booking_package.output_base64sha256
-  runtime         = "nodejs18.x"
-  timeout         = 30
-  memory_size     = 256
+  runtime          = "nodejs18.x"
+  timeout          = 30
+  memory_size      = 256
 
   environment {
     variables = {

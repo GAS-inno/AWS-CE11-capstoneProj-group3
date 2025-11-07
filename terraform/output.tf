@@ -13,17 +13,7 @@ output "s3_backend_bucket" {
 
 output "s3_backend_key" {
   description = "S3 key path for Terraform state"
-  value       = "sky-high-booker/terraform.tfstate"
-}
-
-output "dynamodb_table_name" {
-  description = "Name of the DynamoDB table for state locking"
-  value       = try(aws_dynamodb_table.terraform_lock.name, "not_created")
-}
-
-output "dynamodb_table_arn" {
-  description = "ARN of the DynamoDB table for state locking"
-  value       = try(aws_dynamodb_table.terraform_lock.arn, "not_created")
+  value       = "ce11g3.tfstate"
 }
 
 # ==============================================
@@ -219,9 +209,7 @@ output "app_s3_bucket_name" {
 output "dynamodb_tables" {
   description = "DynamoDB table names"
   value = {
-    flights  = aws_dynamodb_table.flights.name
     bookings = aws_dynamodb_table.bookings.name
-    payments = aws_dynamodb_table.payments.name
   }
 }
 
@@ -244,4 +232,23 @@ output "cognito_identity_pool_id" {
 output "dynamodb_region" {
   description = "AWS region for DynamoDB tables"
   value       = data.aws_region.current.name
+}
+
+# ==============================================
+# Route 53 & Domain Outputs
+# ==============================================
+
+output "app_domain_name" {
+  description = "Custom domain name for the application"
+  value       = "sky-high-booker.sctp-sandbox.com"
+}
+
+output "app_domain_url" {
+  description = "Full HTTPS URL for the application"
+  value       = "https://sky-high-booker.sctp-sandbox.com"
+}
+
+output "ssl_certificate_arn" {
+  description = "ARN of the SSL certificate"
+  value       = try(aws_acm_certificate.app_cert.arn, "certificate_not_created")
 }

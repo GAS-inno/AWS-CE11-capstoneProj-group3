@@ -46,9 +46,7 @@ resource "aws_iam_policy" "lambda_dynamodb_policy" {
         ]
         Resource = [
           aws_dynamodb_table.bookings.arn,
-          "${aws_dynamodb_table.bookings.arn}/index/*",
-          aws_dynamodb_table.flights.arn,
-          "${aws_dynamodb_table.flights.arn}/index/*"
+          "${aws_dynamodb_table.bookings.arn}/index/*"
         ]
       }
     ]

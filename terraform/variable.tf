@@ -35,19 +35,6 @@ variable "name_prefix" {
   default     = "ce11g3-"
 }
 
-
-variable "state_bucket_name" {
-  description = "Name of S3 bucket for Terraform state"
-  type        = string
-  default     = "ce11-g3-tf-state-bucket" # CHANGE THIS to a unique name
-}
-
-variable "dynamodb_table_name" {
-  description = "Name of DynamoDB table for state locking"
-  type        = string
-  default     = "ce11g3-tf-state-lock"
-}
-
 # DynamoDB variables (tables are created with project_name prefix)
 # No additional configuration needed - DynamoDB is serverless
 

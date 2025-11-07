@@ -258,23 +258,6 @@ const Confirmation = () => {
             </CardContent>
           </Card>
 
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <Mail className="w-5 h-5 text-primary mt-1" />
-                <div>
-                  <h3 className="font-semibold mb-1">
-                    Confirmation Email Sent
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    We've sent your booking confirmation and e-ticket to your
-                    email address. Please check your inbox.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           <div className="flex justify-center">
             <Button
               size="lg"
