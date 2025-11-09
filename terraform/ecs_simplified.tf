@@ -69,14 +69,6 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# ECR Repository for our container images
-resource "aws_ecr_repository" "ecr" {
-  name         = "${local.prefix}-ecr"
-  force_delete = true
-
-  tags = local.tags
-}
-
 # ECS Cluster (replacing module with direct resources)
 resource "aws_ecs_cluster" "main" {
   name = "${local.prefix}-ecs-cluster"
