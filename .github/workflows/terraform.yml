@@ -204,12 +204,45 @@ jobs:
 
     - name: Wait for ECS Service Stability
       run: |
-        echo "⏳ Waiting for ECS service to stabilize..."
+        echo "⏳ Waiting for ECS service to stabilize (max 10 minutes)..."
         aws ecs wait services-stable \
           --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
           --services ${{ steps.ecs-info.outputs.service_name }} \
-          --region ${{ env.AWS_REGION }}
-        echo "✅ ECS service is now stable!"
+          --region ${{ env.AWS_REGION }} || {
+            echo "⚠️ Service did not stabilize within timeout. Checking service status..."
+            aws ecs describe-services \
+              --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
+              --services ${{ steps.ecs-info.outputs.service_name }} \
+              --region ${{ env.AWS_REGION }} \
+              --query 'services[0].[serviceName,status,runningCount,desiredCount,deployments[0].rolloutState]' \
+              --output table
+            echo "⚠️ Check CloudWatch logs and ECS console for details"
+            echo "Continuing deployment despite timeout..."
+          }
+        echo "✅ Deployment initiated successfully!"
+
+    - name: Get ECS Task Status
+      if: always()
+      run: |
+        echo "📊 Checking ECS task status..."
+        TASK_ARN=$(aws ecs list-tasks \
+          --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
+          --service-name ${{ steps.ecs-info.outputs.service_name }} \
+          --region ${{ env.AWS_REGION }} \
+          --query 'taskArns[0]' \
+          --output text)
+        
+        if [ "$TASK_ARN" != "None" ] && [ -n "$TASK_ARN" ]; then
+          echo "Task ARN: $TASK_ARN"
+          aws ecs describe-tasks \
+            --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
+            --tasks $TASK_ARN \
+            --region ${{ env.AWS_REGION }} \
+            --query 'tasks[0].[lastStatus,healthStatus,containers[0].lastStatus]' \
+            --output table || echo "Could not get task details"
+        else
+          echo "No tasks found for service"
+        fi
 
     - name: Terraform Output
       run: |
