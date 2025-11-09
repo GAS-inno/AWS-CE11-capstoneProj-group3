@@ -77,109 +77,188 @@ resource "aws_ecr_repository" "ecr" {
   tags = local.tags
 }
 
-# ECS Cluster and Service using terraform-aws-modules
-module "ecs" {
-  source  = "terraform-aws-modules/ecs/aws"
-  version = "~> 5.9.0"
+# ECS Cluster (replacing module with direct resources)
+resource "aws_ecs_cluster" "main" {
+  name = "${local.prefix}-ecs-cluster"
 
-  cluster_name = "${local.prefix}-ecs-cluster"
-
-  # Use only Fargate (simpler than Fargate + Spot)
-  fargate_capacity_providers = {
-    FARGATE = {
-      default_capacity_provider_strategy = {
-        weight = 100
-      }
-    }
-  }
-
-  services = {
-    sky-high-booker = { # Service name
-      cpu    = 512
-      memory = 1024
-
-      # Container definition - simplified to avoid circular dependencies
-      container_definitions = {
-        sky-high-booker-container = {
-          essential                = true
-          image                    = "${aws_ecr_repository.sky_high_booker.repository_url}:latest"
-          readonly_root_filesystem = false # Disable read-only to allow nginx temp files
-
-          port_mappings = [
-            {
-              containerPort = 80
-              protocol      = "tcp"
-            }
-          ]
-
-          # Environment variables for AWS services
-          environment = [
-            {
-              name  = "AWS_DEFAULT_REGION"
-              value = "us-east-1"
-            },
-            {
-              name  = "VITE_AWS_REGION"
-              value = "us-east-1"
-            },
-            {
-              name  = "VITE_AWS_USER_POOL_ID"
-              value = aws_cognito_user_pool.user_pool.id
-            },
-            {
-              name  = "VITE_AWS_USER_POOL_CLIENT_ID"
-              value = aws_cognito_user_pool_client.user_pool_client.id
-            },
-            {
-              name  = "VITE_AWS_API_GATEWAY_URL"
-              value = "https://${aws_api_gateway_rest_api.booking_api.id}.execute-api.us-east-1.amazonaws.com/prod"
-            },
-            {
-              name  = "VITE_AWS_S3_BUCKET"
-              value = aws_s3_bucket.app_storage.id
-            }
-          ]
-
-          # Health check - use wget which is available in nginx:alpine
-          health_check = {
-            command = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/ || exit 1"]
-          }
-        }
-      }
-
-      # Network configuration
-      assign_public_ip   = true
-      subnet_ids         = local.subnet_ids
-      security_group_ids = [module.ecs_sg.security_group_id]
-
-      # Load balancer configuration
-      load_balancer = {
-        service = {
-          target_group_arn = aws_lb_target_group.ecs.arn
-          container_name   = "sky-high-booker-container"
-          container_port   = 80
-        }
-      }
-    }
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
   }
 
   tags = local.tags
 }
 
-# Security group for ECS tasks
-module "ecs_sg" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.1.0"
+resource "aws_ecs_cluster_capacity_providers" "main" {
+  cluster_name = aws_ecs_cluster.main.name
 
+  capacity_providers = ["FARGATE"]
+
+  default_capacity_provider_strategy {
+    capacity_provider = "FARGATE"
+    weight            = 100
+  }
+}
+
+# ECS Task Definition
+resource "aws_ecs_task_definition" "app" {
+  family                   = "${local.prefix}-task"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = 512
+  memory                   = 1024
+  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "sky-high-booker-container"
+      image     = "${aws_ecr_repository.sky_high_booker.repository_url}:latest"
+      essential = true
+      readonlyRootFilesystem = false
+
+      portMappings = [
+        {
+          containerPort = 80
+          protocol      = "tcp"
+        }
+      ]
+
+      environment = [
+        {
+          name  = "AWS_DEFAULT_REGION"
+          value = "us-east-1"
+        },
+        {
+          name  = "VITE_AWS_REGION"
+          value = "us-east-1"
+        },
+        {
+          name  = "VITE_AWS_USER_POOL_ID"
+          value = aws_cognito_user_pool.user_pool.id
+        },
+        {
+          name  = "VITE_AWS_USER_POOL_CLIENT_ID"
+          value = aws_cognito_user_pool_client.user_pool_client.id
+        },
+        {
+          name  = "VITE_AWS_API_GATEWAY_URL"
+          value = "https://${aws_api_gateway_rest_api.booking_api.id}.execute-api.us-east-1.amazonaws.com/prod"
+        },
+        {
+          name  = "VITE_AWS_S3_BUCKET"
+          value = aws_s3_bucket.app_storage.id
+        }
+      ]
+
+      healthCheck = {
+        command     = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/ || exit 1"]
+        interval    = 30
+        timeout     = 5
+        retries     = 3
+        startPeriod = 60
+      }
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/${local.prefix}"
+          "awslogs-region"        = "us-east-1"
+          "awslogs-stream-prefix" = "ecs"
+          "awslogs-create-group"  = "true"
+        }
+      }
+    }
+  ])
+
+  tags = local.tags
+}
+
+# ECS Service
+resource "aws_ecs_service" "app" {
+  name            = "sky-high-booker"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.app.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = local.subnet_ids
+    security_groups  = [aws_security_group.ecs_tasks.id]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.ecs.arn
+    container_name   = "sky-high-booker-container"
+    container_port   = 80
+  }
+
+  depends_on = [aws_lb_listener.web_https]
+
+  tags = local.tags
+}
+
+# Security group for ECS tasks (replacing module with direct resource)
+resource "aws_security_group" "ecs_tasks" {
   name        = "${local.prefix}-ecs-sg"
   description = "Security group for ECS tasks"
   vpc_id      = local.vpc_id
 
-  ingress_cidr_blocks = ["0.0.0.0/0"]
-  ingress_rules       = ["http-80-tcp"]
-  egress_rules        = ["all-all"]
+  ingress {
+    description = "HTTP from anywhere"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-  tags = local.tags
+  egress {
+    description = "Allow all outbound"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.tags, {
+    Name = "${local.prefix}-ecs-sg"
+  })
+}
+
+# Security group for ALB (replacing module with direct resource)
+resource "aws_security_group" "alb" {
+  name        = "${local.prefix}-alb-sg"
+  description = "Security group for Application Load Balancer"
+  vpc_id      = local.vpc_id
+
+  ingress {
+    description = "HTTP from anywhere"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTPS from anywhere"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow all outbound"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.tags, {
+    Name = "${local.prefix}-alb-sg"
+  })
 }
 
 # Application Load Balancer
@@ -187,26 +266,10 @@ resource "aws_lb" "main" {
   name               = "${local.prefix}-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [module.alb_sg.security_group_id]
+  security_groups    = [aws_security_group.alb.id]
   subnets            = local.subnet_ids
 
   enable_deletion_protection = false
-
-  tags = local.tags
-}
-
-# Security group for ALB
-module "alb_sg" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.1.0"
-
-  name        = "${local.prefix}-alb-sg"
-  description = "Security group for Application Load Balancer"
-  vpc_id      = local.vpc_id
-
-  ingress_cidr_blocks = ["0.0.0.0/0"]
-  ingress_rules       = ["http-80-tcp", "https-443-tcp"]
-  egress_rules        = ["all-all"]
 
   tags = local.tags
 }
