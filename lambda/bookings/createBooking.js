@@ -7,27 +7,27 @@ const ddbDocClient = DynamoDBDocumentClient.from(client);
 
 const BOOKINGS_TABLE = process.env.BOOKINGS_TABLE;
 
+// CORS headers
+const headers = {
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+  'Access-Control-Allow-Methods': 'POST,OPTIONS'
+};
+
 exports.handler = async (event) => {
-  console.log('Event:', JSON.stringify(event, null, 2));
-
-  // CORS headers
-  const headers = {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-    'Access-Control-Allow-Methods': 'POST,OPTIONS'
-  };
-
-  // Handle preflight
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: ''
-    };
-  }
-
   try {
+    console.log('Event:', JSON.stringify(event, null, 2));
+    console.log('BOOKINGS_TABLE:', BOOKINGS_TABLE);
+
+    // Handle preflight
+    if (event.httpMethod === 'OPTIONS') {
+      return {
+        statusCode: 200,
+        headers,
+        body: ''
+      };
+    }
     // Parse request body
     const body = JSON.parse(event.body || '{}');
     
@@ -88,12 +88,14 @@ exports.handler = async (event) => {
 
   } catch (error) {
     console.error('Error:', error);
+    console.error('Error stack:', error.stack);
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({ 
         error: 'Failed to create booking',
-        details: error.message 
+        details: error.message,
+        table: BOOKINGS_TABLE || 'BOOKINGS_TABLE not set'
       })
     };
   }
