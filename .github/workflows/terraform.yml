@@ -5,6 +5,9 @@ on:
     branches: 
       - "main"
       - "feature/ysim"
+  schedule:
+    # Run daily at 8:00 AM UTC (adjust timezone as needed)
+    - cron: '0 0 * * *'
   workflow_dispatch:
     inputs:
       action:
@@ -101,11 +104,11 @@ jobs:
     - name: Terraform Plan (PR)
       run: cd terraform && terraform plan -no-color -input=false
 
-  # Auto-apply on push to main or feature/ysim
+  # Auto-apply on push to main or feature/ysim, or on schedule
   apply:
     name: Terraform Apply & Deploy
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/ysim')
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/ysim')) || github.event_name == 'schedule'
 
     steps:
     - name: Checkout
