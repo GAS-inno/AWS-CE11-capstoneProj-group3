@@ -39,6 +39,17 @@ resource "aws_api_gateway_method" "create_booking" {
   authorization = "NONE"
 }
 
+resource "aws_api_gateway_method_response" "create_booking_200" {
+  rest_api_id = aws_api_gateway_rest_api.booking_api.id
+  resource_id = aws_api_gateway_resource.bookings.id
+  http_method = aws_api_gateway_method.create_booking.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = true
+  }
+}
+
 resource "aws_api_gateway_integration" "create_booking" {
   rest_api_id             = aws_api_gateway_rest_api.booking_api.id
   resource_id             = aws_api_gateway_resource.bookings.id
