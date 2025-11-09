@@ -7,6 +7,12 @@ set -e
 
 echo "🚀 Setting up Sky High Booker infrastructure dependencies..."
 
+# Configure AWS CLI to work with corporate proxies (Zscaler)
+# This skips certificate verification - only use in corporate environments
+export AWS_CA_BUNDLE=""
+export REQUESTS_CA_BUNDLE=""
+export PYTHONHTTPSVERIFY=0
+
 # Check prerequisites
 command -v aws >/dev/null 2>&1 || { echo "❌ AWS CLI is required but not installed. Aborting." >&2; exit 1; }
 command -v docker >/dev/null 2>&1 || { echo "❌ Docker is required but not installed. Aborting." >&2; exit 1; }

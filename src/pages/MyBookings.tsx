@@ -20,6 +20,29 @@ import {
 import { useAuth } from "@/contexts/AWSAuthContext";
 import { toast } from "sonner";
 
+interface FlightDetails {
+  from?: string;
+  to?: string;
+  departure_time?: string;
+  arrival_time?: string;
+  departure_date?: string;
+  passengers?: number;
+  currency?: string;
+}
+
+interface ApiBooking {
+  id: string;
+  flight_id: string;
+  flight_details?: FlightDetails;
+  seat_number?: string;
+  total_amount: number;
+  booking_status: string;
+  created_at: string;
+  return_flight_id?: string;
+  return_flight_details?: FlightDetails;
+  return_seat_number?: string;
+}
+
 interface Booking {
   id: string;
   booking_reference: string;
@@ -76,7 +99,7 @@ const MyBookings = () => {
       console.log('Fetched bookings:', data);
       
       // Transform the API response to match the Booking interface
-      const transformedBookings = data.bookings.map((booking: any) => ({
+      const transformedBookings = data.bookings.map((booking: ApiBooking) => ({
         id: booking.id,
         booking_reference: booking.id.substring(0, 8).toUpperCase(),
         flight_number: booking.flight_id,

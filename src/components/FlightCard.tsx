@@ -71,7 +71,30 @@ export const FlightCard = ({
       return;
     }
 
-    const flightData: any = {
+    interface FlightData {
+      flight: string;
+      price: number;
+      currency: string;
+      passengers?: string;
+      from: string;
+      to: string;
+      depTime: string;
+      arrTime: string;
+      duration: string;
+      returnFlight?: string;
+      returnPrice?: number;
+      returnFrom?: string;
+      returnTo?: string;
+      returnDepTime?: string;
+      returnArrTime?: string;
+      returnDuration?: string;
+      totalPrice?: number;
+      returnDepartureDate?: string;
+      outboundDepartureDate?: string;
+      departureDate?: string;
+    }
+
+    const flightData: FlightData = {
       flight: flightNumber,
       price: displayPrice,
       currency: currency.code,
@@ -114,7 +137,14 @@ export const FlightCard = ({
           .split("T")[0]; // Default to 7 days from now
     }
 
-    const params = new URLSearchParams(flightData).toString();
+    const params = new URLSearchParams(
+      Object.entries(flightData).reduce<Record<string, string>>((acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = String(value);
+        }
+        return acc;
+      }, {})
+    ).toString();
     navigate(`/seat-selection?${params}`);
   };
 

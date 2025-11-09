@@ -2,7 +2,9 @@ name: Terraform Infrastructure
 
 on:
   push:
-    branches: [ "main" ]
+    branches: 
+      - "main"
+      - "feature/ysim"
     paths:
       - 'terraform/**'
       - '.github/workflows/terraform.yml'
@@ -102,11 +104,11 @@ jobs:
     - name: Terraform Plan (PR)
       run: cd terraform && terraform plan -no-color -input=false
 
-  # Auto-apply on push to main
+  # Auto-apply on push to main or feature/ysim
   apply:
-    name: Terraform Apply
+    name: Terraform Apply & Deploy
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/ysim')
 
     steps:
     - name: Checkout
@@ -134,28 +136,115 @@ jobs:
     - name: Terraform Apply
       run: cd terraform && terraform apply -auto-approve tfplan
 
+    - name: Get AWS Account ID
+      id: aws-account
+      run: |
+        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
+        echo "AWS Account ID: $ACCOUNT_ID"
+
+    - name: Get ECR Repository URL
+      id: ecr
+      run: |
+        cd terraform
+        ECR_URL=$(terraform output -raw ecr_repository_url 2>/dev/null || echo "")
+        if [ -z "$ECR_URL" ]; then
+          ECR_URL="${{ steps.aws-account.outputs.account_id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/ce11g3-sky-high-booker"
+        fi
+        echo "ecr_url=$ECR_URL" >> $GITHUB_OUTPUT
+        echo "ECR URL: $ECR_URL"
+
+    - name: Install Lambda Dependencies
+      run: |
+        echo "📦 Installing Lambda dependencies..."
+        cd lambda/bookings
+        npm install --production
+        cd ../..
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build Docker Image
+      run: |
+        echo "🐳 Building Docker image..."
+        docker build -t sky-high-booker:latest .
+        docker tag sky-high-booker:latest ${{ steps.ecr.outputs.ecr_url }}:latest
+        docker tag sky-high-booker:latest ${{ steps.ecr.outputs.ecr_url }}:${{ github.sha }}
+
+    - name: Push Docker Image to ECR
+      run: |
+        echo "📤 Pushing Docker image to ECR..."
+        docker push ${{ steps.ecr.outputs.ecr_url }}:latest
+        docker push ${{ steps.ecr.outputs.ecr_url }}:${{ github.sha }}
+
+    - name: Get ECS Cluster and Service Info
+      id: ecs-info
+      run: |
+        cd terraform
+        CLUSTER_NAME=$(terraform output -raw ecs_cluster_name 2>/dev/null || echo "ce11g3-ecs-cluster")
+        SERVICE_NAME=$(terraform output -raw ecs_service_name 2>/dev/null || echo "sky-high-booker")
+        echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
+        echo "service_name=$SERVICE_NAME" >> $GITHUB_OUTPUT
+        echo "ECS Cluster: $CLUSTER_NAME"
+        echo "ECS Service: $SERVICE_NAME"
+
+    - name: Force ECS Service Update
+      run: |
+        echo "🔄 Updating ECS service with new Docker image..."
+        aws ecs update-service \
+          --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
+          --service ${{ steps.ecs-info.outputs.service_name }} \
+          --force-new-deployment \
+          --region ${{ env.AWS_REGION }}
+
+    - name: Wait for ECS Service Stability
+      run: |
+        echo "⏳ Waiting for ECS service to stabilize..."
+        aws ecs wait services-stable \
+          --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
+          --services ${{ steps.ecs-info.outputs.service_name }} \
+          --region ${{ env.AWS_REGION }}
+        echo "✅ ECS service is now stable!"
+
     - name: Terraform Output
       run: |
         cd terraform
-        echo "## 🎉 Terraform Apply Successful!" >> $GITHUB_STEP_SUMMARY
+        echo "## 🎉 Terraform Apply & Deployment Successful!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### AWS Resources Created/Updated" >> $GITHUB_STEP_SUMMARY
+        echo "### 🏗️ AWS Resources Created/Updated" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Cognito User Pool & Client (Authentication)" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ DynamoDB Tables (flights, bookings, payments, user-profiles)" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ API Gateway REST API" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ S3 Bucket (static assets)" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ ECS Fargate Cluster with ALB" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ ECR Repository" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Lambda Functions (Booking APIs)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Terraform Outputs" >> $GITHUB_STEP_SUMMARY
+        echo "### 🐳 Docker Deployment" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Docker image built successfully" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Image pushed to ECR: \`${{ steps.ecr.outputs.ecr_url }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ ECS service updated with new image" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Image tags: \`latest\`, \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📋 Terraform Outputs" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
         terraform output -json >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
-        echo "1. Copy the outputs above to update your .env file" >> $GITHUB_STEP_SUMMARY
-        echo "2. Build Docker image and push to ECR" >> $GITHUB_STEP_SUMMARY
-        echo "3. Deploy to ECS using the deploy workflow" >> $GITHUB_STEP_SUMMARY
+        echo "### 🌐 Application URLs" >> $GITHUB_STEP_SUMMARY
+        APP_URL=$(terraform output -raw application_url 2>/dev/null || echo "N/A")
+        API_URL=$(terraform output -raw api_gateway_url 2>/dev/null || echo "N/A")
+        echo "- **Application**: $APP_URL" >> $GITHUB_STEP_SUMMARY
+        echo "- **API Gateway**: $API_URL" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✨ Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+        echo "Your application has been deployed and is now running on ECS Fargate." >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📝 Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "1. Access your application using the URL above" >> $GITHUB_STEP_SUMMARY
+        echo "2. Monitor ECS service health in AWS Console" >> $GITHUB_STEP_SUMMARY
+        echo "3. Check CloudWatch logs for any issues" >> $GITHUB_STEP_SUMMARY
 
   # Infrastructure job for manual deployments
   terraform:
