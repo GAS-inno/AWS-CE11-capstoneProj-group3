@@ -221,3 +221,4 @@ updated-task-definition.json
 # ECR and ECS deployment logs
 ecr-login.log
 ecs-deploy.log
+lambda-packages/

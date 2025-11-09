@@ -21,10 +21,12 @@ fi
 
 # Check if .env file exists
 if [ ! -f ".env" ]; then
-    echo "⚠️  Warning: .env file not found. Please create one with your Supabase credentials."
+    echo "⚠️  Warning: .env file not found. Please create one with your AWS credentials."
     echo "Example .env content:"
-    echo "VITE_SUPABASE_URL=your_supabase_url"
-    echo "VITE_SUPABASE_ANON_KEY=your_supabase_anon_key"
+    echo "VITE_AWS_REGION=us-east-1"
+    echo "VITE_AWS_USER_POOL_ID=your_user_pool_id"
+    echo "VITE_AWS_USER_POOL_CLIENT_ID=your_user_pool_client_id"
+    echo "VITE_AWS_API_GATEWAY_URL=your_api_gateway_url"
 fi
 
 # Start the development server
