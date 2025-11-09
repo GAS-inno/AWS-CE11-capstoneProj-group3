@@ -67,6 +67,17 @@ resource "aws_api_gateway_method" "get_bookings" {
   authorization = "NONE"
 }
 
+resource "aws_api_gateway_method_response" "get_bookings_200" {
+  rest_api_id = aws_api_gateway_rest_api.booking_api.id
+  resource_id = aws_api_gateway_resource.bookings.id
+  http_method = aws_api_gateway_method.get_bookings.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = true
+  }
+}
+
 resource "aws_api_gateway_integration" "get_bookings" {
   rest_api_id             = aws_api_gateway_rest_api.booking_api.id
   resource_id             = aws_api_gateway_resource.bookings.id
@@ -84,6 +95,17 @@ resource "aws_api_gateway_method" "get_booking_by_id" {
   authorization = "NONE"
 }
 
+resource "aws_api_gateway_method_response" "get_booking_by_id_200" {
+  rest_api_id = aws_api_gateway_rest_api.booking_api.id
+  resource_id = aws_api_gateway_resource.booking_by_id.id
+  http_method = aws_api_gateway_method.get_booking_by_id.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = true
+  }
+}
+
 resource "aws_api_gateway_integration" "get_booking_by_id" {
   rest_api_id             = aws_api_gateway_rest_api.booking_api.id
   resource_id             = aws_api_gateway_resource.booking_by_id.id
@@ -99,6 +121,17 @@ resource "aws_api_gateway_method" "get_occupied_seats" {
   resource_id   = aws_api_gateway_resource.occupied_seats.id
   http_method   = "GET"
   authorization = "NONE"
+}
+
+resource "aws_api_gateway_method_response" "get_occupied_seats_200" {
+  rest_api_id = aws_api_gateway_rest_api.booking_api.id
+  resource_id = aws_api_gateway_resource.occupied_seats.id
+  http_method = aws_api_gateway_method.get_occupied_seats.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = true
+  }
 }
 
 resource "aws_api_gateway_integration" "get_occupied_seats" {
