@@ -74,6 +74,27 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_role_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+# Add CloudWatch Logs permissions to execution role
+resource "aws_iam_role_policy" "ecs_execution_cloudwatch_policy" {
+  name = "${var.name_prefix}ecs-execution-cloudwatch-policy"
+  role = aws_iam_role.ecs_execution_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:*:*:*"
+      }
+    ]
+  })
+}
+
 # Custom policy for ECS task role (if needed for additional permissions)
 resource "aws_iam_role_policy" "ecs_task_policy" {
   name = "${var.name_prefix}ecs-task-policy"
@@ -90,6 +111,18 @@ resource "aws_iam_role_policy" "ecs_task_policy" {
           "logs:PutLogEvents"
         ]
         Resource = "arn:aws:logs:*:*:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          "arn:aws:s3:::${var.name_prefix}*",
+          "arn:aws:s3:::${var.name_prefix}*/*"
+        ]
       }
     ]
   })
