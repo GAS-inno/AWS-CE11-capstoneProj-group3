@@ -57,27 +57,27 @@ output "ecr_repository_arn" {
 
 output "ecs_cluster_id" {
   description = "ECS cluster ID"
-  value       = module.ecs.cluster_id
+  value       = aws_ecs_cluster.main.id
 }
 
 output "ecs_cluster_name" {
   description = "ECS cluster name"
-  value       = module.ecs.cluster_name
+  value       = aws_ecs_cluster.main.name
 }
 
 output "ecs_cluster_arn" {
   description = "ECS cluster ARN"
-  value       = module.ecs.cluster_arn
+  value       = aws_ecs_cluster.main.arn
 }
 
 output "ecs_service_id" {
   description = "ECS service ID"
-  value       = try(module.ecs.services["sky-high-booker"].id, "service_not_created")
+  value       = try(aws_ecs_service.app.id, "service_not_created")
 }
 
 output "ecs_service_name" {
   description = "ECS service name"
-  value       = try(module.ecs.services["sky-high-booker"].name, "service_not_created")
+  value       = try(aws_ecs_service.app.name, "sky-high-booker")
 }
 
 # ==============================================
@@ -110,12 +110,12 @@ output "target_group_arn" {
 
 output "ecs_security_group_id" {
   description = "Security group ID for ECS tasks"
-  value       = try(module.ecs_sg.security_group_id, "sg_not_created")
+  value       = try(aws_security_group.ecs_tasks.id, "sg_not_created")
 }
 
 output "alb_security_group_id" {
   description = "Security group ID for ALB"
-  value       = try(module.alb_sg.security_group_id, "sg_not_created")
+  value       = try(aws_security_group.alb.id, "sg_not_created")
 }
 
 # ==============================================
@@ -129,7 +129,7 @@ output "application_url" {
 
 output "health_check_url" {
   description = "Application health check endpoint"
-  value       = try("http://${module.ecs.load_balancer_dns_name}/health", "Health check URL not available")
+  value       = try("http://${aws_lb.main.dns_name}/", "Health check URL not available")
 }
 
 # ==============================================
@@ -173,12 +173,12 @@ output "docker_push_commands" {
 output "ecs_deployment_info" {
   description = "ECS deployment information"
   value = {
-    cluster_name    = module.ecs.cluster_name
-    service_name    = try(module.ecs.services["sky-high-booker"].name, "service_not_created")
-    task_definition = try(module.ecs.services["sky-high-booker"].task_definition, "task_not_created")
-    desired_count   = var.ecs_desired_count
-    cpu             = var.ecs_task_cpu
-    memory          = var.ecs_task_memory
+    cluster_name    = aws_ecs_cluster.main.name
+    service_name    = try(aws_ecs_service.app.name, "sky-high-booker")
+    task_definition = try(aws_ecs_task_definition.app.arn, "task_not_created")
+    desired_count   = try(aws_ecs_service.app.desired_count, 1)
+    cpu             = "512"
+    memory          = "1024"
   }
 }
 
