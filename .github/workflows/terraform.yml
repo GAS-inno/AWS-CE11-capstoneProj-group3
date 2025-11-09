@@ -124,6 +124,13 @@ jobs:
         terraform_version: ${{ env.TF_VERSION }}
         terraform_wrapper: false
 
+    - name: Install Lambda Dependencies
+      run: |
+        echo "📦 Installing Lambda dependencies..."
+        cd lambda/bookings
+        npm install --production
+        cd ../..
+
     - name: Terraform Init
       run: cd terraform && terraform init
 
@@ -150,13 +157,6 @@ jobs:
         fi
         echo "ecr_url=$ECR_URL" >> $GITHUB_OUTPUT
         echo "ECR URL: $ECR_URL"
-
-    - name: Install Lambda Dependencies
-      run: |
-        echo "📦 Installing Lambda dependencies..."
-        cd lambda/bookings
-        npm install --production
-        cd ../..
 
     - name: Login to Amazon ECR
       id: login-ecr
