@@ -8,6 +8,10 @@ on:
     paths:
       - 'terraform/**'
       - '.github/workflows/terraform.yml'
+      - 'Dockerfile'
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
   workflow_dispatch:
     inputs:
       action:
