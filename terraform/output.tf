@@ -201,11 +201,6 @@ output "api_gateway_url" {
   value       = "https://${aws_api_gateway_rest_api.booking_api.id}.execute-api.${data.aws_region.current.name}.amazonaws.com/prod"
 }
 
-output "app_s3_bucket_name" {
-  description = "S3 bucket name for application file storage"
-  value       = aws_s3_bucket.app_storage.id
-}
-
 output "dynamodb_tables" {
   description = "DynamoDB table names"
   value = {
@@ -220,7 +215,6 @@ output "aws_environment_variables" {
     VITE_AWS_USER_POOL_ID        = aws_cognito_user_pool.user_pool.id
     VITE_AWS_USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.user_pool_client.id
     VITE_AWS_API_GATEWAY_URL     = "https://${aws_api_gateway_rest_api.booking_api.id}.execute-api.${data.aws_region.current.name}.amazonaws.com/prod"
-    VITE_AWS_S3_BUCKET           = aws_s3_bucket.app_storage.id
   }
 }
 

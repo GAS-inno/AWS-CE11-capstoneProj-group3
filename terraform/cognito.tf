@@ -168,16 +168,6 @@ resource "aws_iam_role_policy" "authenticated_policy" {
           "execute-api:Invoke"
         ]
         Resource = "${aws_api_gateway_rest_api.booking_api.arn}/*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject"
-        ]
-        Resource = [
-          "${aws_s3_bucket.app_storage.arn}/*"
-        ]
       }
     ]
   })

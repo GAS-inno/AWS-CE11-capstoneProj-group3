@@ -136,10 +136,6 @@ resource "aws_ecs_task_definition" "app" {
         {
           name  = "VITE_AWS_API_GATEWAY_URL"
           value = "https://${aws_api_gateway_rest_api.booking_api.id}.execute-api.us-east-1.amazonaws.com/prod"
-        },
-        {
-          name  = "VITE_AWS_S3_BUCKET"
-          value = aws_s3_bucket.app_storage.id
         }
       ]
 
