@@ -36,7 +36,7 @@
 ## Quick Start
 
 ### **🚨 New Repository Setup**
-For first-time setup or new developers: 
+For first-time setup or new developers:
 
 ```bash
 git clone <repository-url>
