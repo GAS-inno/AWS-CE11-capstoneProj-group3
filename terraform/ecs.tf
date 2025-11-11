@@ -64,12 +64,6 @@ locals {
   subnet_ids = aws_subnet.public[*].id
 }
 
-# Use the created VPC and subnets
-locals {
-  vpc_id     = aws_vpc.main.id
-  subnet_ids = aws_subnet.public[*].id
-}
-
 # Get available AZs
 data "aws_availability_zones" "available" {
   state = "available"
