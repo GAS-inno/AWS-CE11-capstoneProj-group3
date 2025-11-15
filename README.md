@@ -6,7 +6,7 @@
 [![Infrastructure](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/terraform.yml/badge.svg)](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/terraform.yml)
 [![Deployment](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/deploy.yml/badge.svg)](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/deploy.yml)
 
-## ✨ Features
+## ✨ Features 
 
 - 🔍 **Flight Search** - Search for flights by destination, dates, and preferences
 - 📅 **Date Selection** - Interactive calendar for departure and return dates
