@@ -1,38 +1,13 @@
-name: Terraform Infrastructure
+name: Continuous Deployment
 
 on:
   push:
     branches: 
       - "main"
-      - "feature/ysim"
   schedule:
-    # Run daily at 8:00 AM UTC (adjust timezone as needed)
+    # Run daily at 8:00 AM Singapore Time (SGT = UTC+8, so 00:00 UTC)
     - cron: '0 0 * * *'
   workflow_dispatch:
-    inputs:
-      action:
-        description: 'Terraform action to perform'
-        required: true
-        default: 'plan'
-        type: choice
-        options:
-        - plan
-        - apply
-        - destroy
-      environment:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'dev'
-        type: choice
-        options:
-        - dev
-        - staging
-        - prod
-  pull_request:
-    branches: [ "main" ]
-    paths:
-      - 'terraform/**'
-      - '.github/workflows/terraform.yml'
 
 env:
   AWS_REGION: us-east-1
@@ -40,75 +15,12 @@ env:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
-  # CI job for pull requests - validation and security checks only
-  ci:
-    name: Terraform CI
+  # Deploy to production on push to main
+  deploy:
+    name: Deploy to Production
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TF_VERSION }}
-
-    - name: Verify Terraform Directory
-      run: |
-        echo "Current directory: $(pwd)"
-        echo "Listing workspace:"
-        ls -la
-        echo "Checking terraform directory:"
-        ls -la terraform/
-        echo "Terraform directory exists: $(test -d terraform && echo 'YES' || echo 'NO')"
-
-    - name: Terraform Format Check
-      run: cd terraform && terraform fmt -check
-
-    - name: Terraform Init
-      run: cd terraform && terraform init
-
-    - name: Terraform Validate
-      run: cd terraform && terraform validate
-
-    - name: Setup TFLint
-      uses: terraform-linters/setup-tflint@v3
-      with:
-        tflint_version: latest
-
-    - name: Init TFLint
-      run: cd terraform && tflint --init
-
-    - name: Run TFLint
-      run: cd terraform && tflint -f compact
-
-    # Temporarily disabled - may be causing path issues
-    # - name: Checkov Security Scan
-    #   uses: bridgecrewio/checkov-action@master
-    #   with:
-    #     framework: terraform
-    #     directory: terraform
-
-    - name: Terraform Plan (PR)
-      run: cd terraform && terraform plan -no-color -input=false
-
-  # Auto-apply on push to main or feature/ysim, or on schedule
-  apply:
-    name: Terraform Apply & Deploy
-    runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/ysim')) || github.event_name == 'schedule'
 
     steps:
     - name: Checkout
@@ -139,6 +51,13 @@ jobs:
 
     - name: Terraform Plan
       run: cd terraform && terraform plan -no-color -input=false -out=tfplan
+
+    - name: Upload Terraform Plan
+      uses: actions/upload-artifact@v4
+      with:
+        name: terraform-plan-cd-${{ github.sha }}
+        path: terraform/tfplan
+        retention-days: 30
 
     - name: Terraform Apply
       run: cd terraform && terraform apply -auto-approve tfplan
@@ -278,107 +197,3 @@ jobs:
         echo "1. Access your application using the URL above" >> $GITHUB_STEP_SUMMARY
         echo "2. Monitor ECS service health in AWS Console" >> $GITHUB_STEP_SUMMARY
         echo "3. Check CloudWatch logs for any issues" >> $GITHUB_STEP_SUMMARY
-
-  # Infrastructure job for manual deployments
-  terraform:
-    name: Terraform ${{ github.event.inputs.action || 'Manual' }}
-    runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
-    if: github.event_name == 'workflow_dispatch'
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
-
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TF_VERSION }}
-
-    - name: Terraform Format Check
-      id: fmt
-      run: cd terraform && terraform fmt -check
-      continue-on-error: true
-
-    - name: Terraform Init
-      id: init
-      run: cd terraform && terraform init
-
-    - name: Terraform Validate
-      id: validate
-      run: cd terraform && terraform validate -no-color
-
-    - name: Terraform Plan
-      id: plan
-      if: github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply'
-      run: |
-        cd terraform
-        terraform plan -no-color -input=false \
-          -var="environment=${{ github.event.inputs.environment }}" \
-          -out=tfplan
-      continue-on-error: true
-
-    - name: Update Pull Request with Plan
-      uses: actions/github-script@v7
-      if: github.event_name == 'pull_request' && (github.event.inputs.action == 'plan' || github.event.inputs.action == 'apply')
-      env:
-        PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
-          #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-          #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-          #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
-          
-          <details><summary>Show Plan</summary>
-          
-          \`\`\`\n
-          ${process.env.PLAN}
-          \`\`\`
-          
-          </details>
-          
-          *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: output
-          })
-
-    - name: Terraform Plan Status
-      if: steps.plan.outcome == 'failure'
-      run: exit 1
-
-    - name: Terraform Apply
-      if: github.event.inputs.action == 'apply'
-      run: cd terraform && terraform apply -auto-approve tfplan
-
-    - name: Terraform Destroy Plan
-      if: github.event.inputs.action == 'destroy'
-      run: |
-        cd terraform
-        terraform plan -destroy -no-color -input=false \
-          -var="environment=${{ github.event.inputs.environment }}" \
-          -out=destroy-plan
-
-    - name: Terraform Destroy
-      if: github.event.inputs.action == 'destroy'
-      run: cd terraform && terraform apply -auto-approve destroy-plan
-
-    - name: Output Terraform Results
-      if: github.event.inputs.action == 'apply'
-      run: |
-        cd terraform
-        echo "🎉 Terraform ${{ github.event.inputs.action }} completed successfully!"
-        echo "📋 Infrastructure Summary:"
-        terraform output -json | jq -r 'to_entries[] | "\(.key): \(.value.value)"'
