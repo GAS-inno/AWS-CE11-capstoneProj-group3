@@ -17,11 +17,10 @@ permissions:
   pull-requests: write
 
 jobs:
-  # CI job for pull requests - validation and security checks only
+  # CI job for feature branches and pull requests - validation and security checks only
   ci:
     name: Terraform CI
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
 
     steps:
     - name: Checkout
