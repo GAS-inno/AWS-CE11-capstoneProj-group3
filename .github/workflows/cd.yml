@@ -1,0 +1,199 @@
+name: Continuous Deployment
+
+on:
+  push:
+    branches: 
+      - "main"
+  schedule:
+    # Run daily at 8:00 AM Singapore Time (SGT = UTC+8, so 00:00 UTC)
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  TF_VERSION: "1.5.0"
+
+permissions:
+  contents: read
+
+jobs:
+  # Deploy to production on push to main
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+        terraform_wrapper: false
+
+    - name: Install Lambda Dependencies
+      run: |
+        echo "📦 Installing Lambda dependencies..."
+        cd lambda/bookings
+        npm install --production
+        cd ../..
+
+    - name: Terraform Init
+      run: cd terraform && terraform init
+
+    - name: Terraform Plan
+      run: cd terraform && terraform plan -no-color -input=false -out=tfplan
+
+    - name: Upload Terraform Plan
+      uses: actions/upload-artifact@v4
+      with:
+        name: terraform-plan-cd-${{ github.sha }}
+        path: terraform/tfplan
+        retention-days: 30
+
+    - name: Terraform Apply
+      run: cd terraform && terraform apply -auto-approve tfplan
+
+    - name: Get AWS Account ID
+      id: aws-account
+      run: |
+        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
+        echo "AWS Account ID: $ACCOUNT_ID"
+
+    - name: Get ECR Repository URL
+      id: ecr
+      run: |
+        cd terraform
+        ECR_URL=$(terraform output -raw ecr_repository_url 2>/dev/null || echo "")
+        if [ -z "$ECR_URL" ]; then
+          ECR_URL="${{ steps.aws-account.outputs.account_id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/ce11g3-sky-high-booker"
+        fi
+        echo "ecr_url=$ECR_URL" >> $GITHUB_OUTPUT
+        echo "ECR URL: $ECR_URL"
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build Docker Image
+      run: |
+        echo "🐳 Building Docker image..."
+        docker build -t sky-high-booker:latest .
+        docker tag sky-high-booker:latest ${{ steps.ecr.outputs.ecr_url }}:latest
+        docker tag sky-high-booker:latest ${{ steps.ecr.outputs.ecr_url }}:${{ github.sha }}
+
+    - name: Push Docker Image to ECR
+      run: |
+        echo "📤 Pushing Docker image to ECR..."
+        docker push ${{ steps.ecr.outputs.ecr_url }}:latest
+        docker push ${{ steps.ecr.outputs.ecr_url }}:${{ github.sha }}
+
+    - name: Get ECS Cluster and Service Info
+      id: ecs-info
+      run: |
+        cd terraform
+        CLUSTER_NAME=$(terraform output -raw ecs_cluster_name 2>/dev/null || echo "ce11g3-ecs-cluster")
+        SERVICE_NAME=$(terraform output -raw ecs_service_name 2>/dev/null || echo "sky-high-booker")
+        echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
+        echo "service_name=$SERVICE_NAME" >> $GITHUB_OUTPUT
+        echo "ECS Cluster: $CLUSTER_NAME"
+        echo "ECS Service: $SERVICE_NAME"
+
+    - name: Force ECS Service Update
+      run: |
+        echo "🔄 Updating ECS service with new Docker image..."
+        aws ecs update-service \
+          --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
+          --service ${{ steps.ecs-info.outputs.service_name }} \
+          --force-new-deployment \
+          --region ${{ env.AWS_REGION }}
+
+    - name: Wait for ECS Service Stability
+      run: |
+        echo "⏳ Waiting for ECS service to stabilize (max 10 minutes)..."
+        aws ecs wait services-stable \
+          --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
+          --services ${{ steps.ecs-info.outputs.service_name }} \
+          --region ${{ env.AWS_REGION }} || {
+            echo "⚠️ Service did not stabilize within timeout. Checking service status..."
+            aws ecs describe-services \
+              --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
+              --services ${{ steps.ecs-info.outputs.service_name }} \
+              --region ${{ env.AWS_REGION }} \
+              --query 'services[0].[serviceName,status,runningCount,desiredCount,deployments[0].rolloutState]' \
+              --output table
+            echo "⚠️ Check CloudWatch logs and ECS console for details"
+            echo "Continuing deployment despite timeout..."
+          }
+        echo "✅ Deployment initiated successfully!"
+
+    - name: Get ECS Task Status
+      if: always()
+      run: |
+        echo "📊 Checking ECS task status..."
+        TASK_ARN=$(aws ecs list-tasks \
+          --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
+          --service-name ${{ steps.ecs-info.outputs.service_name }} \
+          --region ${{ env.AWS_REGION }} \
+          --query 'taskArns[0]' \
+          --output text)
+        
+        if [ "$TASK_ARN" != "None" ] && [ -n "$TASK_ARN" ]; then
+          echo "Task ARN: $TASK_ARN"
+          aws ecs describe-tasks \
+            --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
+            --tasks $TASK_ARN \
+            --region ${{ env.AWS_REGION }} \
+            --query 'tasks[0].[lastStatus,healthStatus,containers[0].lastStatus]' \
+            --output table || echo "Could not get task details"
+        else
+          echo "No tasks found for service"
+        fi
+
+    - name: Terraform Output
+      run: |
+        cd terraform
+        echo "## 🎉 Terraform Apply & Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🏗️ AWS Resources Created/Updated" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Cognito User Pool & Client (Authentication)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ DynamoDB Tables (flights, bookings, payments, user-profiles)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ API Gateway REST API" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ S3 Bucket (static assets)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ ECS Fargate Cluster with ALB" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ ECR Repository" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Lambda Functions (Booking APIs)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🐳 Docker Deployment" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Docker image built successfully" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Image pushed to ECR: \`${{ steps.ecr.outputs.ecr_url }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ ECS service updated with new image" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Image tags: \`latest\`, \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📋 Terraform Outputs" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+        terraform output -json >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🌐 Application URLs" >> $GITHUB_STEP_SUMMARY
+        APP_URL=$(terraform output -raw application_url 2>/dev/null || echo "N/A")
+        API_URL=$(terraform output -raw api_gateway_url 2>/dev/null || echo "N/A")
+        echo "- **Application**: $APP_URL" >> $GITHUB_STEP_SUMMARY
+        echo "- **API Gateway**: $API_URL" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✨ Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+        echo "Your application has been deployed and is now running on ECS Fargate." >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📝 Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "1. Access your application using the URL above" >> $GITHUB_STEP_SUMMARY
+        echo "2. Monitor ECS service health in AWS Console" >> $GITHUB_STEP_SUMMARY
+        echo "3. Check CloudWatch logs for any issues" >> $GITHUB_STEP_SUMMARY

@@ -1,29 +1,17 @@
-# This file creates the S3 bucket and DynamoDB table for Terraform state
-# Run this FIRST before applying the main infrastructure
-# After creation, uncomment the backend configuration in main.tf
+# Simplified Main Configuration 
+# Based on jaezeu/ecs-deployment reference
 
+locals {
+  prefix = "sky-high-booker-dev" # Simplified prefix like the reference
 
-# main.tf can stay empty for now
-# Terraform automatically loads vpc.tf, ec2.tf, security_group.tf, variables.tf, outputs.tf
-
-
-# terraform {
-#   required_version = ">= 1.0"
-  
-#   required_providers {
-#     aws = {
-#       source  = "hashicorp/aws"
-#       version = "~> 5.0"
-#     }
-#   }
-# }
-
-terraform {
-  required_providers {
-    local = {
-      source  = "hashicorp/local"
-      version = "~> 2.5"
-    }
+  # Tags for AWS resources
+  tags = {
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = "Terraform"
   }
 }
 
+# Data sources for AWS account and region info
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}

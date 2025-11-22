@@ -35,3 +35,190 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# React/Node.js specific ignores
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Production build
+/dist/
+/build/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# ESLint cache
+.eslintcache
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Generated keys and certificates (Terraform)
+generated_keys/
+*/generated_keys/
+*.pem
+*.pub
+id_rsa*
+id_ecdsa*
+id_ed25519*
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+
+# Backup and modified files
+*.backup
+*.bak
+*-modified.*
+*-backup.*
+*.orig
+
+# AWS & Cloud deployment
+.aws/
+aws-exports.js
+amplify/
+.amplifyrc
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Testing
+test-results/
+playwright-report/
+coverage/
+.nyc_output/
+
+# macOS
+.DS_Store
+
+# Build tools
+.turbo/
+.next/
+.nuxt/
+.output/
+.vercel/
+.netlify/
+storybook-static/
+
+# Package managers
+pnpm-lock.yaml
+yarn.lock
+package-lock.json.bak
+
+# Generated types
+generated/
+types/generated/
+
+# Sentry
+.sentryclirc
+
+# Local development
+.local/
+local.json
+
+# SSL certificates
+*.pem
+*.crt
+*.key
+
+# Deployment artifacts
+*.zip
+*.tar.gz
+deployment/
+
+# Terraform state and locks (additional protection)
+terraform.tfstate*
+.terraform.lock.hcl.backup
+*.tfplan
+*.tfplan.json
+
+# Task definition files (generated during ECS deployment)
+task-definition.json
+updated-task-definition.json
+
+# ECR and ECS deployment logs
+ecr-login.log
+ecs-deploy.log
+lambda-packages/
