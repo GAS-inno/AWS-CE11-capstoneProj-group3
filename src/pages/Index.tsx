@@ -442,7 +442,13 @@ const Index = () => {
       <section id="flight-results" className="py-16 bg-muted/30">
         <div className="container mx-auto px-4">
           {!searchParams ? (
-            <></>
+            <div className="text-center py-12">
+              <Plane className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <h2 className="text-2xl font-semibold mb-2">Ready to fly?</h2>
+              <p className="text-muted-foreground">
+                Search for flights above to see available options
+              </p>
+            </div>
           ) : (
             <>
               {/* Outbound Flights */}
