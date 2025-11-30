@@ -406,9 +406,9 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative h-[600px] flex items-center justify-center overflow-hidden">
+      <section className="relative h-[320px] flex items-center justify-center overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${heroImage})` }}
@@ -439,7 +439,7 @@ const Index = () => {
       </section>
 
       {/* Available Flights Section */}
-      <section id="flight-results" className="py-16 bg-muted/30">
+      <section id="flight-results" className="py-8 bg-muted/30 flex-1 overflow-auto">
         <div className="container mx-auto px-4">
           {!searchParams ? (
             <div className="text-center py-12">
@@ -521,7 +521,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-primary text-primary-foreground py-12">
+      <footer className="bg-primary text-primary-foreground py-6 mt-auto">
         <div className="container mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Plane className="w-6 h-6" />
