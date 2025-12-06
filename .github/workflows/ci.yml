@@ -68,11 +68,11 @@ jobs:
       run: cd terraform && tflint -f compact
 
     # Temporarily disabled - may be causing path issues
-    # - name: Checkov Security Scan
-    #   uses: bridgecrewio/checkov-action@master
-    #   with:
-    #     framework: terraform
-    #     directory: terraform
+    - name: Checkov Security Scan
+      uses: bridgecrewio/checkov-action@master
+      with:
+        framework: terraform
+        directory: terraform
 
     - name: Terraform Plan (PR)
       run: cd terraform && terraform plan -no-color -input=false -out=tfplan
