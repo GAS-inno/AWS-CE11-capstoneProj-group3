@@ -179,7 +179,7 @@ output "ecs_deployment_info" {
     desired_count   = try(aws_ecs_service.app[0].desired_count, 1)
     cpu             = "512"
     memory          = "1024"
-  } : {
+    } : {
     cluster_name    = "ecs_not_enabled"
     service_name    = "ecs_not_enabled"
     task_definition = "ecs_not_enabled"
