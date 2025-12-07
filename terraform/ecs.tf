@@ -105,7 +105,7 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
 # ECS Task Definition
 resource "aws_ecs_task_definition" "app" {
   count                    = var.enable_ecs ? 1 : 0
-  family                   = "${local.prefix}"
+  family                   = local.prefix
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = 512
@@ -176,7 +176,7 @@ resource "aws_ecs_task_definition" "app" {
 # ECS Service
 resource "aws_ecs_service" "app" {
   count           = var.enable_ecs ? 1 : 0
-  name            = "${local.prefix}"
+  name            = local.prefix
   cluster         = aws_ecs_cluster.main[0].id
   task_definition = aws_ecs_task_definition.app[0].arn
   desired_count   = 1
