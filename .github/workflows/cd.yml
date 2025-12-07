@@ -7,8 +7,17 @@ on:
       - "main"
   schedule:
     # Run daily at 8:00 AM Singapore Time (SGT = UTC+8, so 00:00 UTC)
+    # Note: Scheduled runs will deploy to dev environment by default
     - cron: '0 0 * * *'
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
 
 env:
   AWS_REGION: us-east-1
@@ -19,10 +28,10 @@ permissions:
 
 jobs:
   deploy:
-    name: Deploy to ${{ github.ref == 'refs/heads/main' && 'Production' || 'Development' }}
+    name: Deploy to ${{ (github.event.inputs.environment == 'prod' || (github.ref == 'refs/heads/main' && github.event_name == 'push')) && 'Production' || 'Development' }}
     runs-on: ubuntu-latest
     env:
-      ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
+      ENVIRONMENT: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && github.event_name == 'push' && 'prod' || 'dev') }}
 
     steps:
     - name: Checkout
