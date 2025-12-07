@@ -105,7 +105,7 @@ resource "aws_ecs_task_definition" "app" {
   container_definitions = jsonencode([
     {
       name                   = "sky-high-booker-container"
-      image                  = "${aws_ecr_repository.sky_high_booker.repository_url}:latest"
+      image                  = "${aws_ecr_repository.sky_high_booker.repository_url}:${var.environment}"
       essential              = true
       readonlyRootFilesystem = false
 
