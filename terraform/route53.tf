@@ -7,14 +7,16 @@ data "aws_route53_zone" "sctp_zone" {
 }
 
 # Route 53 A record pointing to the Application Load Balancer
+# Only created when ECS is enabled
 resource "aws_route53_record" "app_domain" {
+  count   = var.enable_ecs ? 1 : 0
   zone_id = data.aws_route53_zone.sctp_zone.zone_id
   name    = "sky-high-booker"
   type    = "A"
 
   alias {
-    name                   = aws_lb.main.dns_name
-    zone_id                = aws_lb.main.zone_id
+    name                   = aws_lb.main[0].dns_name
+    zone_id                = aws_lb.main[0].zone_id
     evaluate_target_health = true
   }
 }

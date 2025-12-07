@@ -57,27 +57,27 @@ output "ecr_repository_arn" {
 
 output "ecs_cluster_id" {
   description = "ECS cluster ID"
-  value       = aws_ecs_cluster.main.id
+  value       = var.enable_ecs ? aws_ecs_cluster.main[0].id : "ecs_not_enabled"
 }
 
 output "ecs_cluster_name" {
   description = "ECS cluster name"
-  value       = aws_ecs_cluster.main.name
+  value       = var.enable_ecs ? aws_ecs_cluster.main[0].name : "ecs_not_enabled"
 }
 
 output "ecs_cluster_arn" {
   description = "ECS cluster ARN"
-  value       = aws_ecs_cluster.main.arn
+  value       = var.enable_ecs ? aws_ecs_cluster.main[0].arn : "ecs_not_enabled"
 }
 
 output "ecs_service_id" {
   description = "ECS service ID"
-  value       = try(aws_ecs_service.app.id, "service_not_created")
+  value       = var.enable_ecs ? try(aws_ecs_service.app[0].id, "service_not_created") : "ecs_not_enabled"
 }
 
 output "ecs_service_name" {
   description = "ECS service name"
-  value       = try(aws_ecs_service.app.name, "sky-high-booker")
+  value       = var.enable_ecs ? try(aws_ecs_service.app[0].name, "sky-high-booker") : "ecs_not_enabled"
 }
 
 # ==============================================
@@ -86,22 +86,22 @@ output "ecs_service_name" {
 
 output "alb_dns_name" {
   description = "Application Load Balancer DNS name"
-  value       = try(aws_lb.main.dns_name, "alb_not_created")
+  value       = var.enable_ecs ? try(aws_lb.main[0].dns_name, "alb_not_created") : "ecs_not_enabled"
 }
 
 output "alb_arn" {
   description = "Application Load Balancer ARN"
-  value       = try(aws_lb.main.arn, "alb_not_created")
+  value       = var.enable_ecs ? try(aws_lb.main[0].arn, "alb_not_created") : "ecs_not_enabled"
 }
 
 output "alb_zone_id" {
   description = "Application Load Balancer hosted zone ID"
-  value       = try(aws_lb.main.zone_id, "alb_not_created")
+  value       = var.enable_ecs ? try(aws_lb.main[0].zone_id, "alb_not_created") : "ecs_not_enabled"
 }
 
 output "target_group_arn" {
   description = "Target group ARN for ECS service"
-  value       = try(aws_lb_target_group.ecs.arn, "target_group_not_created")
+  value       = var.enable_ecs ? try(aws_lb_target_group.ecs[0].arn, "target_group_not_created") : "ecs_not_enabled"
 }
 
 # ==============================================
@@ -124,12 +124,12 @@ output "alb_security_group_id" {
 
 output "application_url" {
   description = "Sky High Booker application URL"
-  value       = try("http://${aws_lb.main.dns_name}", "Application URL not available")
+  value       = var.enable_ecs ? try("http://${aws_lb.main[0].dns_name}", "Application URL not available") : "ecs_not_enabled"
 }
 
 output "health_check_url" {
   description = "Application health check endpoint"
-  value       = try("http://${aws_lb.main.dns_name}/", "Health check URL not available")
+  value       = var.enable_ecs ? try("http://${aws_lb.main[0].dns_name}/", "Health check URL not available") : "ecs_not_enabled"
 }
 
 # ==============================================
@@ -172,13 +172,20 @@ output "docker_push_commands" {
 
 output "ecs_deployment_info" {
   description = "ECS deployment information"
-  value = {
-    cluster_name    = aws_ecs_cluster.main.name
-    service_name    = try(aws_ecs_service.app.name, "sky-high-booker")
-    task_definition = try(aws_ecs_task_definition.app.arn, "task_not_created")
-    desired_count   = try(aws_ecs_service.app.desired_count, 1)
+  value = var.enable_ecs ? {
+    cluster_name    = aws_ecs_cluster.main[0].name
+    service_name    = try(aws_ecs_service.app[0].name, "sky-high-booker")
+    task_definition = try(aws_ecs_task_definition.app[0].arn, "task_not_created")
+    desired_count   = try(aws_ecs_service.app[0].desired_count, 1)
     cpu             = "512"
     memory          = "1024"
+  } : {
+    cluster_name    = "ecs_not_enabled"
+    service_name    = "ecs_not_enabled"
+    task_definition = "ecs_not_enabled"
+    desired_count   = 0
+    cpu             = "0"
+    memory          = "0"
   }
 }
 
