@@ -2,30 +2,30 @@
 
 ## Overview
 
-This project now supports **both ECS and EKS** deployments. EKS is disabled by default to avoid the $73/month control plane cost.
+This project now uses **EKS (Kubernetes) as the primary deployment method**, with ECS as an optional backup. 
 
 ## Architecture
 
-- **ECS**: Simpler, cheaper, AWS-native container orchestration ✅ (Currently Active)
-- **EKS**: Kubernetes-based, more powerful, cloud-agnostic ⚠️ (Optional)
+- **EKS**: Kubernetes-based, powerful orchestration ✅ (Primary/Default)
+- **ECS**: Simpler, AWS-native container service ⚠️ (Backup/Optional)
 
 Both can run simultaneously on the same VPC and share the same ECR repository.
 
 ## Enabling EKS
 
-### Step 1: Enable in Terraform
+### EKS is Enabled by Default
 
-Edit `terraform/variable.tf` or pass via command line:
+EKS will be created automatically when you run:
 
 ```bash
 cd terraform
-terraform plan -var="enable_eks=true" -var="environment=dev"
-terraform apply -var="enable_eks=true" -var="environment=dev"
+terraform plan -var="environment=dev"
+terraform apply -var="environment=dev"
 ```
 
-Or add to `terraform.tfvars`:
-```hcl
-enable_eks = true
+To disable EKS (if you want to use only ECS):
+```bash
+terraform apply -var="enable_eks=false" -var="environment=dev"
 ```
 
 ### Step 2: Wait for Cluster Creation
@@ -74,18 +74,19 @@ kubectl get service sky-high-booker-service -o jsonpath='{.status.loadBalancer.i
 
 ## EKS vs ECS: When to Use What
 
-### Use ECS (Current Default) When:
-- ✅ You want simpler management
-- ✅ Cost is a concern (no control plane fees)
-- ✅ AWS-native integration is sufficient
-- ✅ Team is more familiar with AWS services
-
-### Use EKS When:
+### Use EKS (Current Default) When:
 - ✅ You need advanced Kubernetes features (StatefulSets, DaemonSets, etc.)
 - ✅ Planning multi-cloud or cloud-agnostic deployment
 - ✅ Want to use Kubernetes ecosystem (Helm, Operators, etc.)
 - ✅ Team has Kubernetes expertise
 - ✅ Need fine-grained control over pod scheduling
+- ✅ Want industry-standard container orchestration
+
+### Use ECS (Backup) When:
+- ✅ You want simpler management
+- ✅ Cost is a top concern (no control plane fees with ECS)
+- ✅ AWS-native integration is sufficient
+- ✅ Team is more familiar with AWS services only
 
 ## Cost Comparison
 
@@ -101,10 +102,10 @@ kubectl get service sky-high-booker-service -o jsonpath='{.status.loadBalancer.i
 
 ## Running Both Simultaneously
 
-You can run both ECS and EKS at the same time:
+You can run both EKS and ECS at the same time:
 
-1. **ECS** serves production traffic (main/prod environment)
-2. **EKS** for testing Kubernetes features (dev environment)
+1. **EKS** serves production traffic (primary, always on)
+2. **ECS** as backup or for specific workloads
 3. Both use the same:
    - VPC and subnets
    - ECR repository
@@ -112,13 +113,18 @@ You can run both ECS and EKS at the same time:
    - Cognito user pools
    - API Gateway
 
-## Switching Between ECS and EKS
+To enable both:
+```bash
+terraform apply -var="enable_eks=true" -var="enable_ecs=true" -var="environment=dev"
+```
 
-### To Use EKS for Dev Environment:
+## Switching Between EKS and ECS
+
+### Using EKS (Default):
 
 ```bash
-# Enable EKS
-terraform apply -var="enable_eks=true" -var="environment=dev"
+# EKS is already enabled by default
+terraform apply -var="environment=dev"
 
 # Deploy to EKS
 kubectl config use-context arn:aws:eks:us-east-1:ACCOUNT_ID:cluster/sky-high-booker-dev-eks-cluster
@@ -128,12 +134,14 @@ envsubst < k8s/deployment.yaml | kubectl apply -f -
 kubectl get service sky-high-booker-service
 ```
 
-### To Use ECS for Prod Environment:
+### To Use ECS as Backup:
 
 ```bash
-# ECS already running (default)
-# Check status
-aws ecs list-services --cluster ce11g3-ecs-cluster
+# Enable ECS alongside EKS
+terraform apply -var="enable_ecs=true" -var="environment=dev"
+
+# Check ECS status
+aws ecs list-services --cluster sky-high-booker-dev-ecs-cluster
 ```
 
 ## Useful kubectl Commands
@@ -160,17 +168,24 @@ kubectl delete -f k8s/deployment.yaml
 
 ## Cleanup
 
-### To Remove EKS (Save Costs):
+### To Remove EKS (If Needed):
 
 ```bash
 # Delete Kubernetes resources first
 kubectl delete -f k8s/deployment.yaml
 
-# Then destroy EKS via Terraform
+# Then disable EKS via Terraform
 terraform apply -var="enable_eks=false" -var="environment=dev"
 ```
 
-This will keep your ECS setup running while removing the EKS cluster.
+### To Remove ECS (Backup):
+
+```bash
+# Disable ECS via Terraform
+terraform apply -var="enable_ecs=false" -var="environment=dev"
+```
+
+This will keep your EKS setup running (primary) while removing the ECS backup.
 
 ## Troubleshooting
 
@@ -204,17 +219,17 @@ aws ec2 describe-security-groups --filters "Name=tag:Name,Values=*eks-node-sg*"
 
 ## Next Steps
 
-1. **Try EKS** in dev environment: `terraform apply -var="enable_eks=true"`
-2. **Deploy app to Kubernetes**: Use the kubectl commands above
-3. **Compare**: Test both ECS and EKS to see which fits better
-4. **Decide**: Keep one or both based on your needs
+1. **Deploy with EKS** (default): `terraform apply -var="environment=dev"`
+2. **Configure kubectl**: Use the commands above to connect
+3. **Deploy app to Kubernetes**: Use the kubectl commands above
+4. **Optional: Enable ECS backup**: Add `-var="enable_ecs=true"` if needed
 
 ## Recommendation
 
-**For this project**: Stick with **ECS** unless you specifically need Kubernetes features. ECS is:
-- Simpler to manage
-- More cost-effective
-- Sufficient for your use case
-- Already working perfectly
+**EKS is now your primary deployment method!** It provides:
+- Industry-standard Kubernetes orchestration
+- Flexibility and portability
+- Rich ecosystem of tools
+- Advanced scheduling and scaling capabilities
 
-**Try EKS** if you want to learn Kubernetes or plan to scale to more complex microservices.
+**ECS remains available as a backup** if you need a simpler fallback option or want to compare both approaches.

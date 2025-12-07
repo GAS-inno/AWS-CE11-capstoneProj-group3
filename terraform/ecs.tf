@@ -1,7 +1,14 @@
 # Simplified ECS Configuration based on jaezeu/ecs-deployment reference
-# This replaces the complex main.tf ECS configuration
+# ECS is now the backup/fallback option (EKS is primary)
+
+variable "enable_ecs" {
+  description = "Enable ECS cluster deployment (backup option)"
+  type        = bool
+  default     = false
+}
 
 # Create a simple VPC for ECS (since default VPC doesn't exist)
+# Note: VPC is shared between ECS and EKS
 resource "aws_vpc" "main" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
@@ -70,8 +77,10 @@ data "aws_availability_zones" "available" {
 }
 
 # ECS Cluster (replacing module with direct resources)
+# Only created when ECS is enabled
 resource "aws_ecs_cluster" "main" {
-  name = "${local.prefix}-ecs-cluster"
+  count = var.enable_ecs ? 1 : 0
+  name  = "${local.prefix}-ecs-cluster"
 
   setting {
     name  = "containerInsights"
@@ -82,7 +91,8 @@ resource "aws_ecs_cluster" "main" {
 }
 
 resource "aws_ecs_cluster_capacity_providers" "main" {
-  cluster_name = aws_ecs_cluster.main.name
+  count        = var.enable_ecs ? 1 : 0
+  cluster_name = aws_ecs_cluster.main[0].name
 
   capacity_providers = ["FARGATE"]
 
@@ -94,7 +104,8 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
 
 # ECS Task Definition
 resource "aws_ecs_task_definition" "app" {
-  family                   = "${local.prefix}-task"
+  count                    = var.enable_ecs ? 1 : 0
+  family                   = "${local.prefix}"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = 512
@@ -164,9 +175,10 @@ resource "aws_ecs_task_definition" "app" {
 
 # ECS Service
 resource "aws_ecs_service" "app" {
-  name            = local.prefix
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.app.arn
+  count           = var.enable_ecs ? 1 : 0
+  name            = "${local.prefix}"
+  cluster         = aws_ecs_cluster.main[0].id
+  task_definition = aws_ecs_task_definition.app[0].arn
   desired_count   = 1
   launch_type     = "FARGATE"
 
@@ -177,7 +189,7 @@ resource "aws_ecs_service" "app" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.ecs.arn
+    target_group_arn = aws_lb_target_group.ecs[0].arn
     container_name   = "sky-high-booker-container"
     container_port   = 80
   }
@@ -251,6 +263,7 @@ resource "aws_security_group" "alb" {
 
 # Application Load Balancer
 resource "aws_lb" "main" {
+  count              = var.enable_ecs ? 1 : 0
   name               = "${local.prefix}-alb"
   internal           = false
   load_balancer_type = "application"
@@ -264,6 +277,7 @@ resource "aws_lb" "main" {
 
 # Target Group for ECS service
 resource "aws_lb_target_group" "ecs" {
+  count       = var.enable_ecs ? 1 : 0
   name        = "${local.prefix}-tg"
   port        = 80
   protocol    = "HTTP"
@@ -287,7 +301,8 @@ resource "aws_lb_target_group" "ecs" {
 
 # ALB Listener - HTTP (redirects to HTTPS)
 resource "aws_lb_listener" "web" {
-  load_balancer_arn = aws_lb.main.arn
+  count             = var.enable_ecs ? 1 : 0
+  load_balancer_arn = aws_lb.main[0].arn
   port              = "80"
   protocol          = "HTTP"
 
@@ -304,7 +319,8 @@ resource "aws_lb_listener" "web" {
 
 # ALB Listener - HTTPS
 resource "aws_lb_listener" "web_https" {
-  load_balancer_arn = aws_lb.main.arn
+  count             = var.enable_ecs ? 1 : 0
+  load_balancer_arn = aws_lb.main[0].arn
   port              = "443"
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
@@ -312,7 +328,7 @@ resource "aws_lb_listener" "web_https" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.ecs.arn
+    target_group_arn = aws_lb_target_group.ecs[0].arn
   }
 }
 

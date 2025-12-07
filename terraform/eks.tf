@@ -1,11 +1,11 @@
 # EKS Cluster Configuration
 # Runs alongside ECS - both can coexist
 
-# Enable only when you want to use EKS (it costs ~$73/month for control plane)
+# EKS is now the default deployment method
 variable "enable_eks" {
   description = "Enable EKS cluster deployment"
   type        = bool
-  default     = false
+  default     = true
 }
 
 # EKS Cluster IAM Role
