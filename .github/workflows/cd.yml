@@ -28,7 +28,7 @@ permissions:
 
 jobs:
   deploy:
-    name: Deploy to ${{ github.event.inputs.environment == 'prod' && 'Production' || (github.ref == 'refs/heads/main' && github.event_name == 'push' && 'Production' || 'Development') }}
+    name: Deploy to ${{ (github.event.inputs.environment == 'prod' || (github.ref == 'refs/heads/main' && github.event_name == 'push')) && 'Production' || 'Development' }}
     runs-on: ubuntu-latest
     env:
       ENVIRONMENT: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && github.event_name == 'push' && 'prod' || 'dev') }}
