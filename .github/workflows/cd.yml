@@ -3,6 +3,7 @@ name: Continuous Deployment
 on:
   push:
     branches: 
+      - "dev"
       - "main"
   schedule:
     # Run daily at 8:00 AM Singapore Time (SGT = UTC+8, so 00:00 UTC)
@@ -17,10 +18,11 @@ permissions:
   contents: read
 
 jobs:
-  # Deploy to production on push to main
   deploy:
-    name: Deploy to Production
+    name: Deploy to ${{ github.ref == 'refs/heads/main' && 'Production' || 'Development' }}
     runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'prod' || 'dev' }}
 
     steps:
     - name: Checkout
@@ -49,13 +51,23 @@ jobs:
     - name: Terraform Init
       run: cd terraform && terraform init
 
+    - name: Select or Create Workspace
+      run: |
+        cd terraform
+        if [ "${{ env.ENVIRONMENT }}" == "dev" ]; then
+          terraform workspace select dev || terraform workspace new dev
+        else
+          terraform workspace select default || echo "Using default workspace"
+        fi
+        terraform workspace show
+
     - name: Terraform Plan
-      run: cd terraform && terraform plan -no-color -input=false -out=tfplan
+      run: cd terraform && terraform plan -no-color -input=false -var="environment=${{ env.ENVIRONMENT }}" -out=tfplan
 
     - name: Upload Terraform Plan
       uses: actions/upload-artifact@v4
       with:
-        name: terraform-plan-cd-${{ github.sha }}
+        name: terraform-plan-${{ env.ENVIRONMENT }}-${{ github.sha }}
         path: terraform/tfplan
         retention-days: 30
 
@@ -86,16 +98,16 @@ jobs:
 
     - name: Build Docker Image
       run: |
-        echo "🐳 Building Docker image..."
-        docker build -t sky-high-booker:latest .
-        docker tag sky-high-booker:latest ${{ steps.ecr.outputs.ecr_url }}:latest
-        docker tag sky-high-booker:latest ${{ steps.ecr.outputs.ecr_url }}:${{ github.sha }}
+        echo "🐳 Building Docker image for ${{ env.ENVIRONMENT }} environment..."
+        docker build -t sky-high-booker:${{ env.ENVIRONMENT }} .
+        docker tag sky-high-booker:${{ env.ENVIRONMENT }} ${{ steps.ecr.outputs.ecr_url }}:${{ env.ENVIRONMENT }}
+        docker tag sky-high-booker:${{ env.ENVIRONMENT }} ${{ steps.ecr.outputs.ecr_url }}:${{ env.ENVIRONMENT }}-${{ github.sha }}
 
     - name: Push Docker Image to ECR
       run: |
-        echo "📤 Pushing Docker image to ECR..."
-        docker push ${{ steps.ecr.outputs.ecr_url }}:latest
-        docker push ${{ steps.ecr.outputs.ecr_url }}:${{ github.sha }}
+        echo "📤 Pushing Docker image to ECR (${{ env.ENVIRONMENT }})..."
+        docker push ${{ steps.ecr.outputs.ecr_url }}:${{ env.ENVIRONMENT }}
+        docker push ${{ steps.ecr.outputs.ecr_url }}:${{ env.ENVIRONMENT }}-${{ github.sha }}
 
     - name: Get ECS Cluster and Service Info
       id: ecs-info
@@ -110,7 +122,7 @@ jobs:
 
     - name: Force ECS Service Update
       run: |
-        echo "🔄 Updating ECS service with new Docker image..."
+        echo "🔄 Updating ECS service with new Docker image (${{ env.ENVIRONMENT }})..."
         aws ecs update-service \
           --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
           --service ${{ steps.ecs-info.outputs.service_name }} \
@@ -134,7 +146,7 @@ jobs:
             echo "⚠️ Check CloudWatch logs and ECS console for details"
             echo "Continuing deployment despite timeout..."
           }
-        echo "✅ Deployment initiated successfully!"
+        echo "✅ ${{ env.ENVIRONMENT }} deployment initiated successfully!"
 
     - name: Get ECS Task Status
       if: always()
@@ -162,9 +174,9 @@ jobs:
     - name: Terraform Output
       run: |
         cd terraform
-        echo "## 🎉 Terraform Apply & Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+        echo "## 🎉 ${{ env.ENVIRONMENT == 'prod' && 'Production' || 'Development' }} Deployment Successful!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🏗️ AWS Resources Created/Updated" >> $GITHUB_STEP_SUMMARY
+        echo "### 🏗️ AWS Resources Created/Updated (${{ env.ENVIRONMENT }})" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Cognito User Pool & Client (Authentication)" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ DynamoDB Tables (flights, bookings, payments, user-profiles)" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ API Gateway REST API" >> $GITHUB_STEP_SUMMARY
@@ -173,27 +185,32 @@ jobs:
         echo "- ✅ ECR Repository" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Lambda Functions (Booking APIs)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🐳 Docker Deployment" >> $GITHUB_STEP_SUMMARY
+        echo "### 🐳 Docker Deployment (${{ env.ENVIRONMENT }})" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Docker image built successfully" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Image pushed to ECR: \`${{ steps.ecr.outputs.ecr_url }}\`" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ ECS service updated with new image" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Image tags: \`latest\`, \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Image tags: \`${{ env.ENVIRONMENT }}\`, \`${{ env.ENVIRONMENT }}-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📋 Terraform Outputs" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
         terraform output -json >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🌐 Application URLs" >> $GITHUB_STEP_SUMMARY
+        echo "### 🌐 Application URLs (${{ env.ENVIRONMENT }})" >> $GITHUB_STEP_SUMMARY
         APP_URL=$(terraform output -raw application_url 2>/dev/null || echo "N/A")
         API_URL=$(terraform output -raw api_gateway_url 2>/dev/null || echo "N/A")
         echo "- **Application**: $APP_URL" >> $GITHUB_STEP_SUMMARY
         echo "- **API Gateway**: $API_URL" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### ✨ Deployment Complete!" >> $GITHUB_STEP_SUMMARY
-        echo "Your application has been deployed and is now running on ECS Fargate." >> $GITHUB_STEP_SUMMARY
+        echo "Your application has been deployed to the ${{ env.ENVIRONMENT }} environment and is now running on ECS Fargate." >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📝 Next Steps" >> $GITHUB_STEP_SUMMARY
         echo "1. Access your application using the URL above" >> $GITHUB_STEP_SUMMARY
-        echo "2. Monitor ECS service health in AWS Console" >> $GITHUB_STEP_SUMMARY
-        echo "3. Check CloudWatch logs for any issues" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ env.ENVIRONMENT }}" == "dev" ]; then
+          echo "2. Test your changes in the dev environment" >> $GITHUB_STEP_SUMMARY
+          echo "3. Create a PR to merge dev → main for production deployment" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "2. Monitor ECS service health in AWS Console" >> $GITHUB_STEP_SUMMARY
+          echo "3. Check CloudWatch logs for any issues" >> $GITHUB_STEP_SUMMARY
+        fi
