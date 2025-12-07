@@ -207,7 +207,7 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📝 Next Steps" >> $GITHUB_STEP_SUMMARY
         echo "1. Access your application using the URL above" >> $GITHUB_STEP_SUMMARY
-        if [ "${{ env.ENVIRONMENT }}" == "dev" ]; then
+        if [ "${{ env.ENVIRONMENT }}" = "dev" ]; then
           echo "2. Test your changes in the dev environment" >> $GITHUB_STEP_SUMMARY
           echo "3. Create a PR to merge dev → main for production deployment" >> $GITHUB_STEP_SUMMARY
         else
