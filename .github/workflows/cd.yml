@@ -7,6 +7,7 @@ on:
       - "main"
   schedule:
     # Run daily at 8:00 AM Singapore Time (SGT = UTC+8, so 00:00 UTC)
+    # Note: Scheduled runs will deploy to dev environment by default
     - cron: '0 0 * * *'
   workflow_dispatch:
     inputs:
