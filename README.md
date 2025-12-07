@@ -8,7 +8,7 @@
 
 _Small change for pull request test._
 
-## ✨ Features 
+## ✨ Features
 
 - 🔍 **Flight Search** - Search for flights by destination, dates, and preferences
 - 📅 **Date Selection** - Interactive calendar for departure and return dates
