@@ -57,7 +57,7 @@ jobs:
         if [ "${{ env.ENVIRONMENT }}" == "dev" ]; then
           terraform workspace select dev || terraform workspace new dev
         else
-          terraform workspace select default || echo "Using default workspace"
+          terraform workspace select prod || terraform workspace new prod
         fi
         terraform workspace show
 
