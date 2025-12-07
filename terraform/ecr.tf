@@ -10,7 +10,7 @@ locals {
 
 # ECR Repository for the application
 resource "aws_ecr_repository" "sky_high_booker" {
-  name                 = "${var.name_prefix}sky-high-booker"
+  name                 = "${var.name_prefix}sky-high-booker-${var.environment}"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
 

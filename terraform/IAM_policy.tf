@@ -22,7 +22,7 @@ resource "aws_iam_policy" "ecs_secrets_policy" {
 
 # ECS Task Execution Role
 resource "aws_iam_role" "ecs_execution_role" {
-  name = "${var.name_prefix}ecs-execution-role"
+  name = "${var.name_prefix}ecs-execution-role-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -46,7 +46,7 @@ resource "aws_iam_role" "ecs_execution_role" {
 
 # ECS Task Role
 resource "aws_iam_role" "ecs_task_role" {
-  name = "${var.name_prefix}ecs-task-role"
+  name = "${var.name_prefix}ecs-task-role-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"

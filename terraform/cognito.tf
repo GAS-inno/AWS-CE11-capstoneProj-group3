@@ -128,7 +128,7 @@ resource "aws_cognito_identity_pool" "identity_pool" {
 
 # IAM role for authenticated users
 resource "aws_iam_role" "authenticated_role" {
-  name = "${var.project_name}-cognito-authenticated"
+  name = "${var.project_name}-cognito-authenticated-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
