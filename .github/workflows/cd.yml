@@ -54,7 +54,7 @@ jobs:
     - name: Select or Create Workspace
       run: |
         cd terraform
-        if [ "${{ env.ENVIRONMENT }}" == "dev" ]; then
+        if [ "${{ env.ENVIRONMENT }}" = "dev" ]; then
           terraform workspace select dev || terraform workspace new dev
         else
           terraform workspace select prod || terraform workspace new prod
