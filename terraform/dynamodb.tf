@@ -10,7 +10,7 @@ resource "aws_dynamodb_table" "bookings" {
   name         = "${var.project_name}-bookings-${var.environment}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "id"
-  
+
 
   attribute {
     name = "id"
@@ -22,7 +22,7 @@ resource "aws_dynamodb_table" "bookings" {
   server_side_encryption {
     enabled     = true
     kms_key_arn = "arn:aws:kms:your_key_arn"
-    }
+  }
 
   # Global Secondary Index for user bookings
   attribute {

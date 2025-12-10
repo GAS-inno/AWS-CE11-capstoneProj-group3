@@ -268,9 +268,9 @@ resource "aws_api_gateway_deployment" "booking_api" {
 
 # API Gateway Stage
 resource "aws_api_gateway_stage" "prod" {
-  deployment_id = aws_api_gateway_deployment.booking_api.id
-  rest_api_id   = aws_api_gateway_rest_api.booking_api.id
-  stage_name    = "prod"
+  deployment_id        = aws_api_gateway_deployment.booking_api.id
+  rest_api_id          = aws_api_gateway_rest_api.booking_api.id
+  stage_name           = "prod"
   xray_tracing_enabled = true
 
   tags = local.tags
