@@ -5,6 +5,8 @@ locals {
 }
 
 resource "aws_iam_policy" "ecs_secrets_policy" {
+  #Check: CKV_AWS_286: "Ensure IAM policies does not allow privilege escalation"
+  #Check: CKV_AWS_63: "Ensure no IAM policies documents allow "*" as a statement's actions"
   name        = local.policy_name
   description = "ECS secrets access policy for ${var.environment} environment"
 
@@ -22,6 +24,10 @@ resource "aws_iam_policy" "ecs_secrets_policy" {
 
 # ECS Task Execution Role
 resource "aws_iam_role" "ecs_execution_role" {
+ #Check: CKV_AWS_355: "Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions"
+ #Check: CKV_AWS_237: "Ensure Create before destroy for API Gateway"
+ #Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
+ #Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
   name = "${var.name_prefix}ecs-execution-role"
 
   assume_role_policy = jsonencode({

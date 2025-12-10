@@ -96,6 +96,7 @@ resource "aws_lambda_function" "get_booking_by_id" {
 
 # Lambda Function: Get Occupied Seats
 resource "aws_lambda_function" "get_occupied_seats" {
+  #Check: CKV_AWS_115: "Ensure that AWS Lambda function is configured for function-level concurrent execution limit"
   filename         = data.archive_file.lambda_booking_package.output_path
   function_name    = "${local.prefix}-getOccupiedSeats"
   role             = aws_iam_role.lambda_booking_role.arn
