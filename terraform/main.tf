@@ -2,7 +2,7 @@
 # Based on jaezeu/ecs-deployment reference
 
 locals {
-  prefix = "sky-high-booker-dev" # Simplified prefix like the reference
+  prefix = "${var.project_name}-${var.environment}" # e.g., "sky-high-booker-dev" or "sky-high-booker-prod"
 
   # Tags for AWS resources
   tags = {

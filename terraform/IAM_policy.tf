@@ -24,10 +24,6 @@ resource "aws_iam_policy" "ecs_secrets_policy" {
 
 # ECS Task Execution Role
 resource "aws_iam_role" "ecs_execution_role" {
- #Check: CKV_AWS_355: "Ensure no IAM policies documents allow "*" as a statement's resource for restrictable actions"
- #Check: CKV_AWS_237: "Ensure Create before destroy for API Gateway"
- #Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
- #Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
   name = "${var.name_prefix}ecs-execution-role"
 
   assume_role_policy = jsonencode({
@@ -52,7 +48,7 @@ resource "aws_iam_role" "ecs_execution_role" {
 
 # ECS Task Role
 resource "aws_iam_role" "ecs_task_role" {
-  name = "${var.name_prefix}ecs-task-role"
+  name = "${var.name_prefix}ecs-task-role-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
