@@ -22,18 +22,7 @@ _Small change for pull request test._
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   React App     │────│   AWS ECS        │────│   AWS Cognito   │
-│   (Frontend)    │    │   (Container)    │    │   (Auth)        │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-          │                       │                       │
-          │                       │                       │
-    ┌─────▼─────┐          ┌──────▼──────┐         ┌──────▼──────┐
-    │   Vite    │          │Application  │         │PostgreSQL + │
-    │   Build   │          │Load Balancer│         │   Auth      │
-    └───────────┘          └─────────────┘         └─────────────┘
-```
+![diagram](diagrams/architecture.drawio.png)
 
 ## Quick Start
 
