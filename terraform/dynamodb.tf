@@ -19,10 +19,7 @@ resource "aws_dynamodb_table" "bookings" {
   point_in_time_recovery {
     enabled = true
   }
-  server_side_encryption {
-    enabled     = true
-    kms_key_arn = "arn:aws:kms:your_key_arn"
-  }
+
 
   # Global Secondary Index for user bookings
   attribute {
