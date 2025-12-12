@@ -291,6 +291,14 @@ resource "aws_api_gateway_deployment" "booking_api" {
   ]
 }
 
+# CloudWatch Log Group for API Gateway
+resource "aws_cloudwatch_log_group" "api_gateway_logs" {
+  name              = "/aws/apigateway/${local.prefix}-api"
+  retention_in_days = 7
+
+  tags = local.tags
+}
+
 # API Gateway Stage
 resource "aws_api_gateway_stage" "prod" {
   # Check: CKV2_AWS_29: "Ensure public API gateway are protected by WAF"
