@@ -17,31 +17,6 @@ output "s3_backend_key" {
 }
 
 # ==============================================
-# Network Infrastructure Outputs
-# ==============================================
-
-# VPC & Network Outputs
-output "vpc_id" {
-  description = "ID of the VPC"
-  value       = try(aws_vpc.main.id, "vpc_not_created")
-}
-
-output "vpc_cidr" {
-  description = "CIDR block of the VPC"
-  value       = try(aws_vpc.main.cidr_block, "cidr_not_available")
-}
-
-output "public_subnet_ids" {
-  description = "Public subnets"
-  value       = try(aws_subnet.public[*].id, [])
-}
-
-output "private_subnet_ids" {
-  description = "Private subnets (not used in simplified config)"
-  value       = []
-}
-
-# ==============================================
 # Static Website Infrastructure Outputs  
 # ==============================================
 
@@ -205,9 +180,4 @@ output "app_domain_url" {
 output "ssl_certificate_arn" {
   description = "ARN of the SSL certificate"
   value       = var.domain_name != "" ? aws_acm_certificate.website[0].arn : ""
-}
-
-output "app_storage_bucket" {
-  description = "S3 bucket name for application storage (uploads, etc.)"
-  value       = try(aws_s3_bucket.app_storage.id, "app_storage_not_created")
 }
