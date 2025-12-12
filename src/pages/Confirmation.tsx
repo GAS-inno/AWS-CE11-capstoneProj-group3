@@ -4,14 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plane, CheckCircle, Mail, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-// import FlightDetails from "@/components/FlightDetails"; // TODO: Component missing
-// import BookingSummary from "@/components/BookingSummary"; // TODO: Component missing
 import { useAuth } from "@/contexts/AWSAuthContext";
 import { toast } from "sonner";
 import { useCurrency } from "@/contexts/CurrencyContext";
-
-// TODO: Re-add type when migrating to DynamoDB
-// type BookingInsert = Database['public']['Tables']['bookings']['Insert'];
 
 const Confirmation = () => {
   const navigate = useNavigate();

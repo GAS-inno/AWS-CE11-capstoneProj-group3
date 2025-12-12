@@ -114,7 +114,7 @@ output "deployment_commands" {
 
 output "quick_deploy_script" {
   description = "Quick deployment script path"
-  value       = "Run: ./scripts/deploy-s3.sh"
+  value       = "Deploy frontend: npm run build then upload to S3"
 }
 
 # ==============================================
