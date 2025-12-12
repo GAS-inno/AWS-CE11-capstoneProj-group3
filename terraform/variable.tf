@@ -24,3 +24,9 @@ variable "project_name" {
   type        = string
   default     = "sky-high-booker"
 }
+
+variable "domain_name" {
+  description = "Custom domain name for the application (e.g., sky-high-booker.sctp-sandbox.com)"
+  type        = string
+  default     = "sky-high-booker.sctp-sandbox.com"
+}

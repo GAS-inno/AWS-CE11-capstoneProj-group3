@@ -32,7 +32,7 @@ output "vpc_cidr" {
 }
 
 output "public_subnet_ids" {
-  description = "Public subnets used by ECS"
+  description = "Public subnets"
   value       = try(aws_subnet.public[*].id, [])
 }
 
@@ -42,80 +42,42 @@ output "private_subnet_ids" {
 }
 
 # ==============================================
-# Container Infrastructure Outputs  
+# Static Website Infrastructure Outputs  
 # ==============================================
 
-output "ecr_repository_url" {
-  description = "ECR repository URL for Sky High Booker"
-  value       = aws_ecr_repository.sky_high_booker.repository_url
+output "s3_bucket_name" {
+  description = "S3 bucket name for static website hosting"
+  value       = aws_s3_bucket.website.id
 }
 
-output "ecr_repository_arn" {
-  description = "ECR repository ARN"
-  value       = aws_ecr_repository.sky_high_booker.arn
+output "s3_bucket_arn" {
+  description = "S3 bucket ARN"
+  value       = aws_s3_bucket.website.arn
 }
 
-output "ecs_cluster_id" {
-  description = "ECS cluster ID"
-  value       = aws_ecs_cluster.main.id
+output "s3_bucket_website_endpoint" {
+  description = "S3 bucket website endpoint"
+  value       = aws_s3_bucket_website_configuration.website.website_endpoint
 }
 
-output "ecs_cluster_name" {
-  description = "ECS cluster name"
-  value       = aws_ecs_cluster.main.name
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID"
+  value       = aws_cloudfront_distribution.website.id
 }
 
-output "ecs_cluster_arn" {
-  description = "ECS cluster ARN"
-  value       = aws_ecs_cluster.main.arn
+output "cloudfront_domain_name" {
+  description = "CloudFront distribution domain name"
+  value       = aws_cloudfront_distribution.website.domain_name
 }
 
-output "ecs_service_id" {
-  description = "ECS service ID"
-  value       = try(aws_ecs_service.app.id, "service_not_created")
+output "cloudfront_arn" {
+  description = "CloudFront distribution ARN"
+  value       = aws_cloudfront_distribution.website.arn
 }
 
-output "ecs_service_name" {
-  description = "ECS service name"
-  value       = try(aws_ecs_service.app.name, "sky-high-booker")
-}
-
-# ==============================================
-# Load Balancer Outputs (Conditional)
-# ==============================================
-
-output "alb_dns_name" {
-  description = "Application Load Balancer DNS name"
-  value       = try(aws_lb.main.dns_name, "alb_not_created")
-}
-
-output "alb_arn" {
-  description = "Application Load Balancer ARN"
-  value       = try(aws_lb.main.arn, "alb_not_created")
-}
-
-output "alb_zone_id" {
-  description = "Application Load Balancer hosted zone ID"
-  value       = try(aws_lb.main.zone_id, "alb_not_created")
-}
-
-output "target_group_arn" {
-  description = "Target group ARN for ECS service"
-  value       = try(aws_lb_target_group.ecs.arn, "target_group_not_created")
-}
-
-# ==============================================
-# Security Groups Outputs
-# ==============================================
-
-output "ecs_security_group_id" {
-  description = "Security group ID for ECS tasks"
-  value       = try(aws_security_group.ecs_tasks.id, "sg_not_created")
-}
-
-output "alb_security_group_id" {
-  description = "Security group ID for ALB"
-  value       = try(aws_security_group.alb.id, "sg_not_created")
+output "cloudfront_url" {
+  description = "CloudFront distribution URL"
+  value       = "https://${aws_cloudfront_distribution.website.domain_name}"
 }
 
 # ==============================================
@@ -124,12 +86,12 @@ output "alb_security_group_id" {
 
 output "application_url" {
   description = "Sky High Booker application URL"
-  value       = try("http://${aws_lb.main.dns_name}", "Application URL not available")
+  value       = var.domain_name != "" ? "https://${var.domain_name}" : "https://${aws_cloudfront_distribution.website.domain_name}"
 }
 
-output "health_check_url" {
-  description = "Application health check endpoint"
-  value       = try("http://${aws_lb.main.dns_name}/", "Health check URL not available")
+output "website_endpoint" {
+  description = "Primary website endpoint"
+  value       = var.domain_name != "" ? "https://${var.domain_name}" : "https://${aws_cloudfront_distribution.website.domain_name}"
 }
 
 # ==============================================
@@ -160,26 +122,24 @@ output "name_prefix" {
 # Quick Deploy Commands
 # ==============================================
 
-output "docker_push_commands" {
-  description = "Commands to build and push Docker image to ECR"
+output "deployment_commands" {
+  description = "Commands to deploy the application to S3"
   value = [
-    "aws ecr get-login-password --region ${data.aws_region.current.name} | docker login --username AWS --password-stdin ${aws_ecr_repository.sky_high_booker.repository_url}",
-    "docker build -t sky-high-booker .",
-    "docker tag sky-high-booker:latest ${aws_ecr_repository.sky_high_booker.repository_url}:latest",
-    "docker push ${aws_ecr_repository.sky_high_booker.repository_url}:latest"
+    "# Build the application:",
+    "npm ci",
+    "npm run build",
+    "",
+    "# Upload to S3:",
+    "aws s3 sync ./dist s3://${aws_s3_bucket.website.id}/ --delete",
+    "",
+    "# Invalidate CloudFront cache:",
+    "aws cloudfront create-invalidation --distribution-id ${aws_cloudfront_distribution.website.id} --paths '/*'"
   ]
 }
 
-output "ecs_deployment_info" {
-  description = "ECS deployment information"
-  value = {
-    cluster_name    = aws_ecs_cluster.main.name
-    service_name    = try(aws_ecs_service.app.name, "sky-high-booker")
-    task_definition = try(aws_ecs_task_definition.app.arn, "task_not_created")
-    desired_count   = try(aws_ecs_service.app.desired_count, 1)
-    cpu             = "512"
-    memory          = "1024"
-  }
+output "quick_deploy_script" {
+  description = "Quick deployment script path"
+  value       = "Run: ./scripts/deploy-s3.sh"
 }
 
 # ==============================================
@@ -234,15 +194,20 @@ output "dynamodb_region" {
 
 output "app_domain_name" {
   description = "Custom domain name for the application"
-  value       = "sky-high-booker.sctp-sandbox.com"
+  value       = var.domain_name
 }
 
 output "app_domain_url" {
   description = "Full HTTPS URL for the application"
-  value       = "https://sky-high-booker.sctp-sandbox.com"
+  value       = var.domain_name != "" ? "https://${var.domain_name}" : ""
 }
 
 output "ssl_certificate_arn" {
   description = "ARN of the SSL certificate"
-  value       = try(aws_acm_certificate.app_cert.arn, "certificate_not_created")
+  value       = var.domain_name != "" ? aws_acm_certificate.website[0].arn : ""
+}
+
+output "app_storage_bucket" {
+  description = "S3 bucket name for application storage (uploads, etc.)"
+  value       = try(aws_s3_bucket.app_storage.id, "app_storage_not_created")
 }

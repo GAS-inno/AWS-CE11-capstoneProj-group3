@@ -31,12 +31,12 @@ log_info "Project Directory: $PROJECT_DIR"
 echo ""
 log_warning "⚠️  WARNING: This will destroy ALL infrastructure!"
 log_warning "This includes:"
-log_warning "- ECS services and tasks"
-log_warning "- Load balancers and target groups"
+log_warning "- CloudFront distribution"
+log_warning "- S3 buckets (with data loss)"
 log_warning "- Route 53 records and SSL certificates"
 log_warning "- API Gateway and Lambda functions"
 log_warning "- DynamoDB tables (with data loss)"
-log_warning "- S3 buckets (with data loss)"
+log_warning "- Cognito user pools"
 log_warning "- VPC and networking resources"
 echo ""
 read -p "Are you sure you want to continue? Type 'yes' to confirm: " confirmation
@@ -56,41 +56,27 @@ fi
 
 log_info "Starting infrastructure destruction..."
 
-# Step 1: Scale down ECS service to 0 to stop tasks gracefully
-log_info "Step 1: Scaling down ECS service..."
-ECS_CLUSTER=$(terraform output -raw ecs_cluster_name 2>/dev/null || echo "")
-ECS_SERVICE=$(terraform output -raw ecs_service_name 2>/dev/null || echo "")
-
-if [ -n "$ECS_CLUSTER" ] && [ -n "$ECS_SERVICE" ]; then
-    aws ecs update-service --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE" --desired-count 0 > /dev/null 2>&1 || true
-    log_success "ECS service scaled down"
-else
-    log_info "ECS service info not found, skipping scale down"
-fi
-
-# Step 2: Wait a moment for tasks to stop
-log_info "Waiting for ECS tasks to stop..."
-sleep 30
-
-# Step 3: Destroy infrastructure in reverse order
-log_info "Step 3: Destroying ECS services and tasks..."
-terraform destroy -target=module.ecs.module.service -auto-approve || true
-
-log_info "Step 4: Destroying load balancer resources..."
-terraform destroy -target=aws_lb_listener.web_https \
-                  -target=aws_lb_listener.web \
-                  -target=aws_lb.main \
-                  -target=aws_lb_target_group.ecs \
+# Step 1: Destroy CloudFront and S3 resources (may take time)
+log_info "Step 1: Destroying CloudFront distribution..."
+terraform destroy -target=aws_cloudfront_distribution.website \
+                  -target=aws_cloudfront_origin_access_identity.website \
                   -auto-approve || true
 
-log_info "Step 5: Destroying Route 53 and SSL resources..."
+log_info "Step 2: Destroying Route 53 and SSL resources..."
 terraform destroy -target=aws_route53_record.app_domain \
-                  -target=aws_acm_certificate_validation.app_cert \
-                  -target=aws_route53_record.app_cert_validation \
-                  -target=aws_acm_certificate.app_cert \
+                  -target=aws_acm_certificate_validation.website \
+                  -target=aws_route53_record.cert_validation \
+                  -target=aws_acm_certificate.website \
                   -auto-approve || true
 
-log_info "Step 6: Destroying API Gateway and Lambda..."
+log_info "Step 3: Destroying S3 bucket..."
+terraform destroy -target=aws_s3_bucket_policy.website \
+                  -target=aws_s3_bucket_website_configuration.website \
+                  -target=aws_s3_bucket_cors_configuration.website \
+                  -target=aws_s3_bucket.website \
+                  -auto-approve || true
+
+log_info "Step 4: Destroying API Gateway and Lambda..."
 terraform destroy -target=aws_api_gateway_deployment.booking_api \
                   -target=aws_api_gateway_stage.prod \
                   -target=aws_lambda_function.create_booking \
@@ -100,7 +86,7 @@ terraform destroy -target=aws_api_gateway_deployment.booking_api \
                   -target=aws_api_gateway_rest_api.booking_api \
                   -auto-approve || true
 
-log_info "Step 7: Destroying remaining resources..."
+log_info "Step 5: Destroying remaining resources..."
 terraform destroy -auto-approve
 
 log_success "Infrastructure destruction completed!"
@@ -120,6 +106,5 @@ log_success "🎉 Cleanup complete!"
 log_info "All Sky High Booker infrastructure has been destroyed."
 echo ""
 log_info "Note: The following may still exist and need manual cleanup:"
-log_info "- ECR repositories with Docker images"
 log_info "- CloudWatch log groups (will auto-expire)"
 log_info "- Route 53 hosted zone (if not managed by Terraform)"
