@@ -2,6 +2,14 @@
 
 # CloudFront distribution
 resource "aws_cloudfront_distribution" "website" {
+  #Check: CKV2_AWS_47: "Ensure AWS CloudFront attached WAFv2 WebACL is configured with AMR for Log4j Vulnerability"
+  #Check: CKV_AWS_374: "Ensure AWS CloudFront web distribution has geo restriction enabled"
+  #Check: CKV_AWS_86: "Ensure CloudFront distribution has Access Logging enabled"
+  #Check: CKV_AWS_310: "Ensure CloudFront distributions should have origin failover configured"
+  #Check: CKV_AWS_68: "CloudFront Distribution should have WAF enabled"
+  #Check: CKV2_AWS_42: "Ensure AWS CloudFront distribution uses custom SSL certificate"
+  #Check: CKV2_AWS_32: "Ensure CloudFront distribution has a response headers policy attached"
+
   enabled             = true
   is_ipv6_enabled     = true
   comment             = "Sky High Booker - ${var.environment}"

@@ -1,5 +1,6 @@
 # API Gateway Configuration with Lambda Integration
 resource "aws_api_gateway_rest_api" "booking_api" {
+  #Check: CKV_AWS_237: "Ensure Create before destroy for API Gateway"
   name        = "${local.prefix}-api"
   description = "Booking API for Sky High Booker application"
 
@@ -35,6 +36,8 @@ resource "aws_api_gateway_resource" "occupied_seats" {
 
 # POST /bookings - Create Booking
 resource "aws_api_gateway_method" "create_booking" {
+  #Check: CKV2_AWS_53: "Ensure AWS API gateway request is validated"
+  #Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
   rest_api_id   = aws_api_gateway_rest_api.booking_api.id
   resource_id   = aws_api_gateway_resource.bookings.id
   http_method   = "POST"
@@ -63,6 +66,8 @@ resource "aws_api_gateway_integration" "create_booking" {
 
 # GET /bookings - List Bookings
 resource "aws_api_gateway_method" "get_bookings" {
+  #Check: CKV2_AWS_53: "Ensure AWS API gateway request is validated"
+  #Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
   rest_api_id   = aws_api_gateway_rest_api.booking_api.id
   resource_id   = aws_api_gateway_resource.bookings.id
   http_method   = "GET"
@@ -91,6 +96,8 @@ resource "aws_api_gateway_integration" "get_bookings" {
 
 # GET /bookings/{id} - Get Booking by ID
 resource "aws_api_gateway_method" "get_booking_by_id" {
+  #Check: CKV2_AWS_53: "Ensure AWS API gateway request is validated"
+  #Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
   rest_api_id   = aws_api_gateway_rest_api.booking_api.id
   resource_id   = aws_api_gateway_resource.booking_by_id.id
   http_method   = "GET"
@@ -119,6 +126,8 @@ resource "aws_api_gateway_integration" "get_booking_by_id" {
 
 # GET /bookings/occupied-seats - Get Occupied Seats
 resource "aws_api_gateway_method" "get_occupied_seats" {
+  #Check: CKV2_AWS_53: "Ensure AWS API gateway request is validated"
+  #Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
   rest_api_id   = aws_api_gateway_rest_api.booking_api.id
   resource_id   = aws_api_gateway_resource.occupied_seats.id
   http_method   = "GET"
@@ -147,6 +156,7 @@ resource "aws_api_gateway_integration" "get_occupied_seats" {
 
 # CORS - OPTIONS methods
 resource "aws_api_gateway_method" "options_bookings" {
+  #Check: CKV2_AWS_53: "Ensure AWS API gateway request is validated"
   rest_api_id   = aws_api_gateway_rest_api.booking_api.id
   resource_id   = aws_api_gateway_resource.bookings.id
   http_method   = "OPTIONS"
@@ -192,6 +202,7 @@ resource "aws_api_gateway_integration_response" "options_bookings" {
 
 # OPTIONS /bookings/occupied-seats - CORS
 resource "aws_api_gateway_method" "options_occupied_seats" {
+  #Check: CKV2_AWS_53: "Ensure AWS API gateway request is validated"
   rest_api_id   = aws_api_gateway_rest_api.booking_api.id
   resource_id   = aws_api_gateway_resource.occupied_seats.id
   http_method   = "OPTIONS"
@@ -237,6 +248,7 @@ resource "aws_api_gateway_integration_response" "options_occupied_seats" {
 
 # API Gateway Deployment
 resource "aws_api_gateway_deployment" "booking_api" {
+  #Check: CKV_AWS_76: "Ensure API Gateway has Access Logging enabled"
   rest_api_id = aws_api_gateway_rest_api.booking_api.id
 
   triggers = {
@@ -270,6 +282,11 @@ resource "aws_api_gateway_deployment" "booking_api" {
 
 # API Gateway Stage
 resource "aws_api_gateway_stage" "prod" {
+  #Check: CKV2_AWS_29: "Ensure public API gateway are protected by WAF"
+  #Check: CKV2_AWS_4: "Ensure API Gateway stage have logging level defined as appropriate"
+  #Check: CKV2_AWS_51: "Ensure AWS API Gateway endpoints uses client certificate authentication"
+  #Check: CKV_AWS_76: "Ensure API Gateway has Access Logging enabled"
+  #Check: CKV_AWS_120: "Ensure API Gateway caching is enabled"
   deployment_id        = aws_api_gateway_deployment.booking_api.id
   rest_api_id          = aws_api_gateway_rest_api.booking_api.id
   stage_name           = "prod"

@@ -2,6 +2,11 @@
 
 # S3 bucket for hosting the static website
 resource "aws_s3_bucket" "website" {
+  #Check: CKV2_AWS_62: "Ensure S3 buckets should have event notifications enabled"
+  #Check: CKV2_AWS_61: "Ensure that an S3 bucket has a lifecycle configuration"
+  #Check: CKV_AWS_18: "Ensure the S3 bucket has access logging enabled"
+  #Check: CKV_AWS_144: "Ensure that S3 bucket has cross-region replication enabled"
+  #Check: CKV2_AWS_6: "Ensure that S3 bucket has a Public Access block"
   bucket        = "${var.name_prefix}sky-high-booker-${var.environment}"
   force_destroy = true # Allow bucket deletion even if it contains objects
 
@@ -12,6 +17,9 @@ resource "aws_s3_bucket" "website" {
 
 # S3 bucket ownership controls
 resource "aws_s3_bucket_ownership_controls" "website" {
+ #Check: CKV2_AWS_65: "Ensure access control lists for S3 buckets are disabled"
+ #Check: CKV2_AWS_65: "Ensure access control lists for S3 buckets are disabled"
+
   bucket = aws_s3_bucket.website.id
 
   rule {
@@ -21,6 +29,8 @@ resource "aws_s3_bucket_ownership_controls" "website" {
 
 # Block public access (we'll use CloudFront with OAI instead)
 resource "aws_s3_bucket_public_access_block" "website" {
+  #Check: CKV_AWS_56: "Ensure S3 bucket has Block Public Access enabled"
+  #Check: CKV_AWS_54: "Ensure S3 bucket has block public policy enabled"
   bucket = aws_s3_bucket.website.id
 
   block_public_acls       = true

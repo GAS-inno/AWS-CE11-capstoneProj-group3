@@ -18,6 +18,12 @@ data "archive_file" "lambda_booking_package" {
 
 # Lambda Function: Create Booking
 resource "aws_lambda_function" "create_booking" {
+  #Check: CKV_AWS_117: "Ensure that AWS Lambda function is configured inside a VPC"
+  #Check: CKV_AWS_116: "Ensure that AWS Lambda function is configured for a Dead Letter Queue(DLQ)"
+  #Check: CKV_AWS_173: "Check encryption settings for Lambda environmental variable"
+  #Check: CKV_AWS_50: "X-Ray tracing is enabled for Lambda"
+  #Check: CKV_AWS_115: "Ensure that AWS Lambda function is configured for function-level concurrent execution limit"
+  #Check: CKV_AWS_272: "Ensure AWS Lambda function is configured to validate code-signing"
   filename         = data.archive_file.lambda_booking_package.output_path
   function_name    = "${local.prefix}-createBooking"
   role             = aws_iam_role.lambda_booking_role.arn
@@ -44,6 +50,12 @@ resource "aws_lambda_function" "create_booking" {
 
 # Lambda Function: Get Bookings (by user)
 resource "aws_lambda_function" "get_bookings" {
+  #Check: CKV_AWS_117: "Ensure that AWS Lambda function is configured inside a VPC"
+  #Check: CKV_AWS_116: "Ensure that AWS Lambda function is configured for a Dead Letter Queue(DLQ)"
+  #Check: CKV_AWS_50: "X-Ray tracing is enabled for Lambda"
+  #Check: CKV_AWS_173: "Check encryption settings for Lambda environmental variable"
+  #Check: CKV_AWS_115: "Ensure that AWS Lambda function is configured for function-level concurrent execution limit"
+  #Check: CKV_272: "Ensure AWS Lambda function is configured to validate code-signing"
   filename         = data.archive_file.lambda_booking_package.output_path
   function_name    = "${local.prefix}-getBookings"
   role             = aws_iam_role.lambda_booking_role.arn
@@ -70,6 +82,13 @@ resource "aws_lambda_function" "get_bookings" {
 
 # Lambda Function: Get Booking by ID
 resource "aws_lambda_function" "get_booking_by_id" {
+  #Check: CKV_AWS_117: "Ensure that AWS Lambda function is configured inside a VPC"
+  #Check: CKV_AWS_116: "Ensure that AWS Lambda function is configured for a Dead Letter Queue(DLQ)"
+  #Check: CKV_AWS_50: "X-Ray tracing is enabled for Lambda"
+  #Check: CKV_AWS_173: "Check encryption settings for Lambda environmental variable"
+  #Check: CKV_AWS_115: "Ensure that AWS Lambda function is configured for function-level concurrent execution limit"
+  #Check: CKV_272: "Ensure AWS Lambda function is configured to validate code-signing"
+
   filename         = data.archive_file.lambda_booking_package.output_path
   function_name    = "${local.prefix}-getBookingById"
   role             = aws_iam_role.lambda_booking_role.arn
@@ -97,6 +116,12 @@ resource "aws_lambda_function" "get_booking_by_id" {
 # Lambda Function: Get Occupied Seats
 resource "aws_lambda_function" "get_occupied_seats" {
   #Check: CKV_AWS_115: "Ensure that AWS Lambda function is configured for function-level concurrent execution limit"
+  #Check: CKV_AWS_117: "Ensure that AWS Lambda function is configured inside a VPC"
+  #Check: CKV_AWS_116: "Ensure that AWS Lambda function is configured for a Dead Letter Queue(DLQ)"
+  #Check: CKV_AWS_50: "X-Ray tracing is enabled for Lambda"
+  #Check: CKV_AWS_173: "Check encryption settings for Lambda environmental variable"
+  #Check: CKV_AWS_115: "Ensure that AWS Lambda function is configured for function-level concurrent execution limit"
+  #Check: CKV_272: "Ensure AWS Lambda function is configured to validate code-signing"
   filename         = data.archive_file.lambda_booking_package.output_path
   function_name    = "${local.prefix}-getOccupiedSeats"
   role             = aws_iam_role.lambda_booking_role.arn
