@@ -34,9 +34,9 @@ resource "aws_s3_bucket_public_access_block" "website" {
   bucket = aws_s3_bucket.website.id
 
   block_public_acls       = true
-  block_public_policy     = false # Allow CloudFront access policy
+  block_public_policy     = true # Allow CloudFront access policy
   ignore_public_acls      = true
-  restrict_public_buckets = false # Allow CloudFront access policy
+  restrict_public_buckets = true # Allow CloudFront access policy
 }
 
 # Enable versioning for rollback capability
