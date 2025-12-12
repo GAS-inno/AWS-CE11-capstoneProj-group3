@@ -6,8 +6,6 @@
 [![Infrastructure](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/terraform.yml/badge.svg)](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/terraform.yml)
 [![Deployment](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/deploy.yml/badge.svg)](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/deploy.yml)
 
-_Small change for pull request test._
-
 ## ✨ Features
 
 - 🔍 **Flight Search** - Search for flights by destination, dates, and preferences
@@ -33,8 +31,15 @@ For first-time setup or new developers:
 git clone <repository-url>
 cd AWS-CE11-capstoneProj-group3
 
-# Automated setup (handles all dependencies)
-./scripts/setup.sh
+# Setup infrastructure
+cd terraform
+terraform init
+terraform apply
+
+# Setup frontend
+cd ..
+npm install
+npm run dev
 ```
 
 ### **🔄 Existing Infrastructure**
@@ -69,10 +74,6 @@ sky-high-booker/
 │   ├── 📁 hooks/             # Custom React hooks
 │   ├── 📁 lib/               # Utility functions
 │   └── 📁 assets/            # Static assets
-├── 📁 scripts/               # Deployment and utility scripts
-│   ├── deploy-s3.sh         # S3 static website deployment
-│   ├── setup.sh             # Infrastructure setup
-│   └── destroy.sh           # Infrastructure cleanup
 ├── 📁 terraform/             # Infrastructure as Code
 │   ├── main.tf              # Core AWS resources (S3, CloudFront, VPC)
 │   ├── backend.tf           # Remote state configuration
@@ -132,13 +133,16 @@ git push origin main
 
 ### **Manual Deployment**
 ```bash
-# Deploy infrastructure and application
-./scripts/deploy-s3.sh
-
-# Or deploy infrastructure only
+# Deploy infrastructure only
 cd terraform/
 terraform init
 terraform apply
+
+# Build frontend locally
+cd ..
+npm install
+npm run build
+# Upload `dist/` to your S3 bucket via AWS CLI or CI
 ```
 
 ### **Multi-Environment Support**
@@ -153,7 +157,7 @@ Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 - 📖 **[Development Setup](./docs/development/setup.md)** - Complete development environment setup
 - 🏗️ **[Infrastructure Architecture](./docs/infrastructure/architecture.md)** - AWS infrastructure deep dive
 - 🚀 **[Deployment Guide](./docs/deployment/guide.md)** - Comprehensive deployment instructions
-- 🔧 **[Scripts Documentation](./scripts/README.md)** - Deployment and utility scripts guide
+ 
 
 ### **Quick Links**
 - [Getting Started](./docs/development/setup.md#-quick-start)
@@ -178,14 +182,15 @@ npm test               # Run tests
 npm run format         # Format with Prettier
 
 # Deployment
-./scripts/setup.sh      # Initial infrastructure setup
-./scripts/deploy-s3.sh  # Deploy to S3 + CloudFront
+cd terraform && terraform apply   # Provision infra
+npm run build                      # Build frontend
+# Upload `dist/` to S3 (via CI or AWS CLI)
 ```
 
 ### **Key Development Commands**
 ```bash
 # Setup new development environment
-./scripts/dev.sh
+npm install && npm run dev
 
 # Run development server with hot reload
 npm run dev
