@@ -38,6 +38,11 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: ${{ env.TF_VERSION }}
+    
+    - name: Terraform Format Check
+      run: |
+          cd terraform
+          terraform fmt -check
 
     - name: Verify Terraform Directory
       run: |
