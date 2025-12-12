@@ -1,184 +1,95 @@
-# Deployment Scripts
+# Scripts Directory
 
-This directory contains all deployment and utility scripts for the Sky High Booker application.
+This directory contains deployment and utility scripts for Sky High Booker.
 
 ## 📁 Directory Structure
 
 ```
 scripts/
-├── docker/              # Docker-related configuration files
-│   ├── nginx.conf       # Nginx configuration for production
-│   └── env-config.sh    # Runtime environment variable setup
-├── deploy-ecs.sh        # ECS Fargate deployment script  
-├── deploy.sh            # S3 static website deployment script (legacy)
-└── dev.sh              # Local development setup script
+├── deploy-s3.sh         # S3 static website deployment script
+├── setup.sh             # Initial infrastructure setup
+├── dev.sh               # Development environment script
+├── destroy.sh           # Infrastructure teardown script
+├── add-sample-data.sh   # Add sample data to DynamoDB
+└── new-repo-setup.sh    # New repository setup script
 ```
 
 ## 🚀 Deployment Scripts
 
-### **ECS Deployment** (`deploy-ecs.sh`)
-**Primary deployment method for containerized application**
+### **S3 Deployment** (deploy-s3.sh)
+**Primary deployment method for static website**
 
 ```bash
-# Deploy to ECS Fargate
-./scripts/deploy-ecs.sh
-
-# Or make executable and run
-chmod +x scripts/deploy-ecs.sh
-scripts/deploy-ecs.sh
+# Deploy to S3 + CloudFront
+./scripts/deploy-s3.sh
 ```
 
 **What it does:**
+- Deploys infrastructure with Terraform
 - Builds the React application
-- Creates Docker image
-- Pushes to ECR repository
-- Updates ECS service
-- Monitors deployment status
+- Uploads files to S3 with proper cache headers
+- Invalidates CloudFront cache
+- Tests the deployment
 
 **Prerequisites:**
 - AWS CLI configured
-- Docker installed
-- ECS infrastructure deployed via Terraform
+- Node.js and npm installed
+- Terraform deployed
 
-### **S3 Static Deployment** (`deploy.sh`) - *Legacy*
-**Alternative deployment method for static hosting**
+## 🛠️ Utility Scripts
+
+### **Setup Script** (setup.sh)
+Initial infrastructure setup for new developers.
 
 ```bash
-# Deploy to S3 static website
-./scripts/deploy.sh
+./scripts/setup.sh
 ```
 
-**What it does:**
-- Builds the React application
-- Syncs files to S3 bucket
-- Sets up S3 website configuration
-
-**Note:** This is legacy deployment. Use ECS deployment for production.
-
-### **Development Setup** (`dev.sh`)
-**Local development environment setup**
+### **Development Script** (dev.sh)
+Run development environment locally.
 
 ```bash
-# Start development environment
 ./scripts/dev.sh
 ```
 
-**What it does:**
-- Installs dependencies
-- Starts development server
-- Opens browser to application
-
-## 🐳 Docker Configuration
-
-### **Nginx Configuration** (`docker/nginx.conf`)
-Production-ready Nginx configuration for serving the React application:
-- Gzip compression enabled
-- Security headers configured
-- Single Page Application routing support
-- Static asset caching
-- Health check endpoint
-
-### **Environment Configuration** (`docker/env-config.sh`)
-Runtime environment variable injection script:
-- Replaces placeholder values in built application
-- Supports dynamic configuration without rebuild
-- Handles AWS Cognito and API Gateway URLs
-
-## 📋 Usage Examples
-
-### **Local Development**
-```bash
-# Quick start
-scripts/dev.sh
-
-# Manual setup
-npm install
-npm run dev
-```
-
-### **Production Deployment**
-```bash
-# Deploy to ECS (recommended)
-scripts/deploy-ecs.sh
-
-# Deploy to S3 (legacy)
-scripts/deploy.sh
-```
-
-### **Docker Build & Test**
-```bash
-# Build Docker image locally
-docker build -t sky-high-booker .
-
-# Test Docker container
-docker run -p 3000:80 sky-high-booker
-```
-
-## 🔧 Script Customization
-
-### **Environment Variables**
-Scripts support these environment variables:
+### **Sample Data** (add-sample-data.sh)
+Add sample flight data to DynamoDB.
 
 ```bash
-# AWS Configuration
-AWS_REGION=us-east-1
-AWS_PROFILE=default
-
-# Application Configuration  
-ECR_REPOSITORY=ce11g3-sky-high-booker
-ECS_CLUSTER=ce11g3-sky-high-booker-cluster
-ECS_SERVICE=ce11g3-sky-high-booker-cluster-sky-high-booker
-
-# AWS Cognito Configuration
-VITE_COGNITO_USER_POOL_ID=your-user-pool-id
-VITE_COGNITO_CLIENT_ID=your-client-id
-VITE_AWS_REGION=us-east-1
+./scripts/add-sample-data.sh
 ```
 
-### **Script Modification**
-To customize deployment behavior:
-1. Copy the script to a new name (e.g., `deploy-staging.sh`)
-2. Modify environment variables
-3. Update resource names for target environment
-4. Test thoroughly before use
+### **Destroy Script** (destroy.sh)
+Clean up all infrastructure resources.
 
-## 🐛 Troubleshooting
-
-### **Common Issues:**
-
-**Script not executable:**
 ```bash
-chmod +x scripts/*.sh
+./scripts/destroy.sh
 ```
 
-**AWS credentials not configured:**
+## 📝 Common Tasks
+
+### Deploy to Production
 ```bash
-aws configure
-# or
-export AWS_PROFILE=your-profile
+# Deploy everything
+./scripts/deploy-s3.sh
 ```
 
-**Docker build fails:**
+### Update Application Only
 ```bash
-# Clear Docker cache
-docker system prune -a
+# Build
+npm run build
 
-# Rebuild image
-docker build --no-cache -t sky-high-booker .
+# Upload to S3
+S3_BUCKET=$(cd terraform && terraform output -raw s3_bucket_name)
+aws s3 sync ./dist "s3://$S3_BUCKET/" --delete
+
+# Invalidate CloudFront
+CF_DIST_ID=$(cd terraform && terraform output -raw cloudfront_distribution_id)
+aws cloudfront create-invalidation --distribution-id "$CF_DIST_ID" --paths "/*"
 ```
 
-**ECS deployment stuck:**
+### Clean Up
 ```bash
-# Check ECS service status
-aws ecs describe-services --cluster $ECS_CLUSTER --services $ECS_SERVICE
-
-# Check CloudWatch logs
-aws logs describe-log-groups --log-group-name-prefix "/ecs/"
+# Destroy all infrastructure
+./scripts/destroy.sh
 ```
-
-## 📚 Related Documentation
-
-- [Infrastructure Setup](../docs/infrastructure/README.md)
-- [Development Guide](../docs/development/setup.md)
-- [Deployment Guide](../docs/deployment/README.md)
-- [GitHub Actions](../docs/github-actions.md)

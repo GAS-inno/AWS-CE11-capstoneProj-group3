@@ -1,6 +1,6 @@
 # Sky High Booker
 
-🛫 **Modern Flight Booking Application** - A full-stack React application with AWS ECS deployment.
+🛫 **Modern Flight Booking Application** - A full-stack React application with AWS static website hosting.
 
 [![CI/CD Pipeline](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/ci.yml/badge.svg)](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/ci.yml)
 [![Infrastructure](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/terraform.yml/badge.svg)](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/terraform.yml)
@@ -70,12 +70,11 @@ sky-high-booker/
 │   ├── 📁 lib/               # Utility functions
 │   └── 📁 assets/            # Static assets
 ├── 📁 scripts/               # Deployment and utility scripts
-│   ├── deploy-ecs.sh         # ECS deployment automation
-│   ├── deploy.sh             # General deployment script
-│   ├── dev.sh               # Development environment setup
-│   └── 📁 docker/           # Docker configuration files
+│   ├── deploy-s3.sh         # S3 static website deployment
+│   ├── setup.sh             # Infrastructure setup
+│   └── destroy.sh           # Infrastructure cleanup
 ├── 📁 terraform/             # Infrastructure as Code
-│   ├── main.tf              # Core AWS resources (ECS, ALB, VPC)
+│   ├── main.tf              # Core AWS resources (S3, CloudFront, VPC)
 │   ├── backend.tf           # Remote state configuration
 │   ├── provider.tf          # AWS provider setup
 │   ├── variable.tf          # Input variables
@@ -110,16 +109,14 @@ sky-high-booker/
 - **API Gateway** for REST API management
 
 ### **Infrastructure**
-- **AWS ECS Fargate** for container orchestration
-- **Application Load Balancer** for traffic distribution
-- **Amazon ECR** for container registry
+- **Amazon S3** for static website hosting
+- **Amazon CloudFront** for CDN
 - **VPC** with public/private subnets
-- **Auto Scaling** for high availability
+- **Route 53** for DNS management
 
 ### **DevOps**
 - **Terraform** for Infrastructure as Code
 - **GitHub Actions** for CI/CD
-- **Docker** for containerization
 - **AWS CLI** for deployment automation
 
 ## 🚢 Deployment
@@ -135,13 +132,13 @@ git push origin main
 
 ### **Manual Deployment**
 ```bash
-# Deploy infrastructure
+# Deploy infrastructure and application
+./scripts/deploy-s3.sh
+
+# Or deploy infrastructure only
 cd terraform/
 terraform init
 terraform apply
-
-# Deploy application
-./scripts/deploy-ecs.sh
 ```
 
 ### **Multi-Environment Support**
@@ -180,14 +177,9 @@ npm run type-check      # TypeScript validation
 npm test               # Run tests
 npm run format         # Format with Prettier
 
-# Docker
-docker build -t sky-high-booker .
-docker run -p 3000:80 sky-high-booker
-
 # Deployment
-./scripts/dev.sh        # Quick development setup
-./scripts/deploy.sh     # Full deployment
-./scripts/deploy-ecs.sh # ECS-specific deployment
+./scripts/setup.sh      # Initial infrastructure setup
+./scripts/deploy-s3.sh  # Deploy to S3 + CloudFront
 ```
 
 ### **Key Development Commands**
@@ -226,16 +218,15 @@ npm run test:e2e
 - **Authentication**: AWS Cognito with email/password
 - **Authorization**: IAM policies and Cognito user pools
 - **Data Protection**: HTTPS everywhere, secure headers
-- **Container Security**: Non-root user, minimal base image
 - **Infrastructure**: Private subnets, security groups, IAM roles
-- **Secrets Management**: GitHub Secrets, AWS Parameter Store
+- **Secrets Management**: GitHub Secrets, AWS Systems Manager
 
 ## 📊 Monitoring
 
-- **Application Monitoring**: ECS CloudWatch logs and metrics
-- **Infrastructure Monitoring**: ALB, ECS, and auto-scaling metrics
+- **Application Monitoring**: CloudWatch logs for Lambda functions
+- **Infrastructure Monitoring**: CloudFront, S3, and API Gateway metrics
 - **Error Tracking**: CloudWatch error logs and alarms
-- **Performance**: Response time and resource utilization tracking
+- **Performance**: CDN cache hit rates and API response times
 
 ## 🤝 Contributing
 
