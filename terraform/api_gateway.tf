@@ -7,6 +7,9 @@ resource "aws_api_gateway_rest_api" "booking_api" {
   endpoint_configuration {
     types = ["REGIONAL"]
   }
+  lifecycle {
+    create_before_destroy = true
+  }
 
   tags = local.tags
 }
@@ -39,10 +42,11 @@ resource "aws_api_gateway_method" "create_booking" {
   # Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
   # Check: CKV2_AWS_53: "Ensure AWS API gateway request is validated"
   # Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
-  rest_api_id   = aws_api_gateway_rest_api.booking_api.id
-  resource_id   = aws_api_gateway_resource.bookings.id
-  http_method   = "POST"
-  authorization = "NONE"
+  rest_api_id      = aws_api_gateway_rest_api.booking_api.id
+  resource_id      = aws_api_gateway_resource.bookings.id
+  http_method      = "POST"
+  authorization    = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_method_response" "create_booking_200" {
@@ -67,13 +71,13 @@ resource "aws_api_gateway_integration" "create_booking" {
 
 # GET /bookings - List Bookings
 resource "aws_api_gateway_method" "get_bookings" {
-  # Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
   # Check: CKV2_AWS_53: "Ensure AWS API gateway request is validated"
-  # Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
-  rest_api_id   = aws_api_gateway_rest_api.booking_api.id
-  resource_id   = aws_api_gateway_resource.bookings.id
-  http_method   = "GET"
-  authorization = "NONE"
+  rest_api_id      = aws_api_gateway_rest_api.booking_api.id
+  resource_id      = aws_api_gateway_resource.bookings.id
+  http_method      = "GET"
+  authorization    = "NONE"
+  api_key_required = true
+
 }
 
 resource "aws_api_gateway_method_response" "get_bookings_200" {
@@ -101,10 +105,11 @@ resource "aws_api_gateway_method" "get_booking_by_id" {
   # Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
   # Check: CKV2_AWS_53: "Ensure AWS API gateway request is validated"
   # Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
-  rest_api_id   = aws_api_gateway_rest_api.booking_api.id
-  resource_id   = aws_api_gateway_resource.booking_by_id.id
-  http_method   = "GET"
-  authorization = "NONE"
+  rest_api_id      = aws_api_gateway_rest_api.booking_api.id
+  resource_id      = aws_api_gateway_resource.booking_by_id.id
+  http_method      = "GET"
+  authorization    = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_method_response" "get_booking_by_id_200" {
@@ -132,10 +137,11 @@ resource "aws_api_gateway_method" "get_occupied_seats" {
   # Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
   # Check: CKV2_AWS_53: "Ensure AWS API gateway request is validated"
   # Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
-  rest_api_id   = aws_api_gateway_rest_api.booking_api.id
-  resource_id   = aws_api_gateway_resource.occupied_seats.id
-  http_method   = "GET"
-  authorization = "NONE"
+  rest_api_id      = aws_api_gateway_rest_api.booking_api.id
+  resource_id      = aws_api_gateway_resource.occupied_seats.id
+  http_method      = "GET"
+  authorization    = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_method_response" "get_occupied_seats_200" {
@@ -161,10 +167,11 @@ resource "aws_api_gateway_integration" "get_occupied_seats" {
 # CORS - OPTIONS methods
 resource "aws_api_gateway_method" "options_bookings" {
   # Check: CKV2_AWS_53: "Ensure AWS API gateway request is validated"
-  rest_api_id   = aws_api_gateway_rest_api.booking_api.id
-  resource_id   = aws_api_gateway_resource.bookings.id
-  http_method   = "OPTIONS"
-  authorization = "NONE"
+  rest_api_id      = aws_api_gateway_rest_api.booking_api.id
+  resource_id      = aws_api_gateway_resource.bookings.id
+  http_method      = "OPTIONS"
+  authorization    = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "options_bookings" {
@@ -207,10 +214,11 @@ resource "aws_api_gateway_integration_response" "options_bookings" {
 # OPTIONS /bookings/occupied-seats - CORS
 resource "aws_api_gateway_method" "options_occupied_seats" {
   # Check: CKV2_AWS_53: "Ensure AWS API gateway request is validated"
-  rest_api_id   = aws_api_gateway_rest_api.booking_api.id
-  resource_id   = aws_api_gateway_resource.occupied_seats.id
-  http_method   = "OPTIONS"
-  authorization = "NONE"
+  rest_api_id      = aws_api_gateway_rest_api.booking_api.id
+  resource_id      = aws_api_gateway_resource.occupied_seats.id
+  http_method      = "OPTIONS"
+  authorization    = "NONE"
+  api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "options_occupied_seats" {
@@ -252,8 +260,6 @@ resource "aws_api_gateway_integration_response" "options_occupied_seats" {
 
 # API Gateway Deployment
 resource "aws_api_gateway_deployment" "booking_api" {
-  # Check: CKV_AWS_237: "Ensure Create before destroy for API Gateway"
-  # Check: CKV_AWS_76: "Ensure API Gateway has Access Logging enabled"
   rest_api_id = aws_api_gateway_rest_api.booking_api.id
 
   triggers = {
@@ -287,18 +293,23 @@ resource "aws_api_gateway_deployment" "booking_api" {
 
 # API Gateway Stage
 resource "aws_api_gateway_stage" "prod" {
-  # Check: CKV_AWS_76: "Ensure API Gateway has Access Logging enabled"
   # Check: CKV2_AWS_29: "Ensure public API gateway are protected by WAF"
   # Check: CKV2_AWS_4: "Ensure API Gateway stage have logging level defined as appropriate"
   # Check: CKV2_AWS_51: "Ensure AWS API Gateway endpoints uses client certificate authentication"
   # Check: CKV_AWS_76: "Ensure API Gateway has Access Logging enabled"
-  # Check: CKV_AWS_120: "Ensure API Gateway caching is enabled"
   deployment_id        = aws_api_gateway_deployment.booking_api.id
   rest_api_id          = aws_api_gateway_rest_api.booking_api.id
   stage_name           = "prod"
   xray_tracing_enabled = true
 
   tags = local.tags
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
+    format          = "$context.requestId $context.extendedRequestId $context.identity.sourceIp $context.requestTime $context.routeKey $context.status $context.error.message"
+  }
+  cache_cluster_enabled = true
+
 }
 
 

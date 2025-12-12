@@ -25,6 +25,7 @@ resource "aws_cloudfront_distribution" "website" {
     s3_origin_config {
       origin_access_identity = aws_cloudfront_origin_access_identity.website.cloudfront_access_identity_path
     }
+
   }
 
   default_cache_behavior {
@@ -103,6 +104,7 @@ resource "aws_cloudfront_distribution" "website" {
   depends_on = [
     aws_acm_certificate_validation.website
   ]
+
 }
 
 # ACM Certificate for custom domain (must be in us-east-1 for CloudFront)
