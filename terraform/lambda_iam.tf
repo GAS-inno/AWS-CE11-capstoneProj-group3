@@ -55,30 +55,8 @@ resource "aws_iam_policy" "lambda_dynamodb_policy" {
   tags = local.tags
 }
 
-
-# Policy for Lambda to send messages to SQS (DLQ)
-resource "aws_iam_policy" "lambda_sqs_policy" {
-  name        = "${local.prefix}-lambda-sqs-policy"
-  description = "Allow Lambda to send messages to SQS for DLQ"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "sqs:SendMessage"
-        ]
-        Resource = "arn:aws:sqs:*:*:${local.prefix}-lambda-dlq"
-      }
-    ]
-  })
-
-  tags = local.tags
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_sqs" {
-  policy_arn = aws_iam_policy.lambda_sqs_policy.arn
+resource "aws_iam_role_policy_attachment" "lambda_dynamodb" {
+  policy_arn = aws_iam_policy.lambda_dynamodb_policy.arn
   role       = aws_iam_role.lambda_booking_role.name
 }
 
