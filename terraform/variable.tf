@@ -30,3 +30,11 @@ variable "domain_name" {
   type        = string
   default     = "sky-high-booker.sctp-sandbox.com"
 }
+
+variable "discord_webhook_url" {
+  description = "Discord webhook URL for SNS notifications"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+

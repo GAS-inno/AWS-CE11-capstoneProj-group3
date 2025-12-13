@@ -55,7 +55,8 @@ resource "aws_lambda_function" "create_booking" {
 
   environment {
     variables = {
-      BOOKINGS_TABLE = aws_dynamodb_table.bookings.name
+      BOOKINGS_TABLE  = aws_dynamodb_table.bookings.name
+      SNS_TOPIC_ARN   = aws_sns_topic.booking_notifications.arn
     }
   }
 
@@ -64,7 +65,8 @@ resource "aws_lambda_function" "create_booking" {
     aws_iam_role_policy_attachment.lambda_basic_execution,
     aws_iam_role_policy_attachment.lambda_dynamodb,
     aws_iam_role_policy_attachment.lambda_xray_write,
-    aws_iam_role_policy_attachment.lambda_sqs
+    aws_iam_role_policy_attachment.lambda_sqs,
+    aws_iam_role_policy_attachment.lambda_sns
   ]
 
   tags = local.tags
@@ -96,7 +98,8 @@ resource "aws_lambda_function" "get_bookings" {
 
   environment {
     variables = {
-      BOOKINGS_TABLE = aws_dynamodb_table.bookings.name
+      BOOKINGS_TABLE  = aws_dynamodb_table.bookings.name
+      SNS_TOPIC_ARN   = aws_sns_topic.booking_notifications.arn
     }
   }
 
@@ -105,7 +108,8 @@ resource "aws_lambda_function" "get_bookings" {
     aws_iam_role_policy_attachment.lambda_basic_execution,
     aws_iam_role_policy_attachment.lambda_dynamodb,
     aws_iam_role_policy_attachment.lambda_xray_write,
-    aws_iam_role_policy_attachment.lambda_sqs
+    aws_iam_role_policy_attachment.lambda_sqs,
+    aws_iam_role_policy_attachment.lambda_sns
   ]
 
   tags = local.tags
@@ -138,7 +142,8 @@ resource "aws_lambda_function" "get_booking_by_id" {
 
   environment {
     variables = {
-      BOOKINGS_TABLE = aws_dynamodb_table.bookings.name
+      BOOKINGS_TABLE  = aws_dynamodb_table.bookings.name
+      SNS_TOPIC_ARN   = aws_sns_topic.booking_notifications.arn
     }
   }
 
@@ -147,7 +152,8 @@ resource "aws_lambda_function" "get_booking_by_id" {
     aws_iam_role_policy_attachment.lambda_basic_execution,
     aws_iam_role_policy_attachment.lambda_dynamodb,
     aws_iam_role_policy_attachment.lambda_xray_write,
-    aws_iam_role_policy_attachment.lambda_sqs
+    aws_iam_role_policy_attachment.lambda_sqs,
+    aws_iam_role_policy_attachment.lambda_sns
   ]
 
   tags = local.tags
@@ -179,7 +185,8 @@ resource "aws_lambda_function" "get_occupied_seats" {
 
   environment {
     variables = {
-      BOOKINGS_TABLE = aws_dynamodb_table.bookings.name
+      BOOKINGS_TABLE  = aws_dynamodb_table.bookings.name
+      SNS_TOPIC_ARN   = aws_sns_topic.booking_notifications.arn
     }
   }
 
@@ -188,7 +195,8 @@ resource "aws_lambda_function" "get_occupied_seats" {
     aws_iam_role_policy_attachment.lambda_basic_execution,
     aws_iam_role_policy_attachment.lambda_dynamodb,
     aws_iam_role_policy_attachment.lambda_xray_write,
-    aws_iam_role_policy_attachment.lambda_sqs
+    aws_iam_role_policy_attachment.lambda_sqs,
+    aws_iam_role_policy_attachment.lambda_sns
   ]
 
   tags = local.tags
