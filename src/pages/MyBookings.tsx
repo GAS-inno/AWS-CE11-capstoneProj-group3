@@ -180,7 +180,7 @@ const MyBookings = () => {
                   </h3>
                   <p className="text-muted-foreground mb-6">
                     Start your journey by booking your first flight with
-                    SkyWings Airlines
+                    SkyHigh Airlines
                   </p>
                   <Button onClick={() => navigate("/")}>Search Flights</Button>
                 </div>

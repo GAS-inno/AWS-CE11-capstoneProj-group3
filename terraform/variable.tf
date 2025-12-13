@@ -25,8 +25,14 @@ variable "project_name" {
   default     = "sky-high-booker"
 }
 
-variable "domain_name" {
-  description = "Custom domain name for the application (e.g., sky-high-booker.sctp-sandbox.com)"
+variable "domain_prefix" {
+  description = "Domain prefix for environment-specific URLs"
   type        = string
-  default     = "sky-high-booker.sctp-sandbox.com"
+  default     = "sky-high-booker"
+}
+
+variable "base_domain" {
+  description = "Base domain for Route53 (e.g., sctp-sandbox.com)"
+  type        = string
+  default     = "sctp-sandbox.com"
 }
