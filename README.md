@@ -1,14 +1,12 @@
 # Sky High Booker
 
-🛫 **Modern Flight Booking Application** - A full-stack React application with AWS ECS deployment.
+🛫 **Modern Flight Booking Application** - A full-stack React application with AWS static website hosting.
 
 [![CI/CD Pipeline](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/ci.yml/badge.svg)](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/ci.yml)
 [![Infrastructure](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/terraform.yml/badge.svg)](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/terraform.yml)
 [![Deployment](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/deploy.yml/badge.svg)](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/deploy.yml)
 
-_Small change for pull request test._
-
-## ✨ Features 
+## ✨ Features
 
 - 🔍 **Flight Search** - Search for flights by destination, dates, and preferences
 - 📅 **Date Selection** - Interactive calendar for departure and return dates
@@ -22,18 +20,7 @@ _Small change for pull request test._
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   React App     │────│   AWS ECS        │────│   AWS Cognito   │
-│   (Frontend)    │    │   (Container)    │    │   (Auth)        │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-          │                       │                       │
-          │                       │                       │
-    ┌─────▼─────┐          ┌──────▼──────┐         ┌──────▼──────┐
-    │   Vite    │          │Application  │         │PostgreSQL + │
-    │   Build   │          │Load Balancer│         │   Auth      │
-    └───────────┘          └─────────────┘         └─────────────┘
-```
+![diagram](diagrams/architecture.drawio.png)
 
 ## Quick Start
 
@@ -44,8 +31,15 @@ For first-time setup or new developers:
 git clone <repository-url>
 cd AWS-CE11-capstoneProj-group3
 
-# Automated setup (handles all dependencies)
-./scripts/setup.sh
+# Setup infrastructure
+cd terraform
+terraform init
+terraform apply
+
+# Setup frontend
+cd ..
+npm install
+npm run dev
 ```
 
 ### **🔄 Existing Infrastructure**
@@ -80,13 +74,8 @@ sky-high-booker/
 │   ├── 📁 hooks/             # Custom React hooks
 │   ├── 📁 lib/               # Utility functions
 │   └── 📁 assets/            # Static assets
-├── 📁 scripts/               # Deployment and utility scripts
-│   ├── deploy-ecs.sh         # ECS deployment automation
-│   ├── deploy.sh             # General deployment script
-│   ├── dev.sh               # Development environment setup
-│   └── 📁 docker/           # Docker configuration files
 ├── 📁 terraform/             # Infrastructure as Code
-│   ├── main.tf              # Core AWS resources (ECS, ALB, VPC)
+│   ├── main.tf              # Core AWS resources (S3, CloudFront, VPC)
 │   ├── backend.tf           # Remote state configuration
 │   ├── provider.tf          # AWS provider setup
 │   ├── variable.tf          # Input variables
@@ -121,16 +110,14 @@ sky-high-booker/
 - **API Gateway** for REST API management
 
 ### **Infrastructure**
-- **AWS ECS Fargate** for container orchestration
-- **Application Load Balancer** for traffic distribution
-- **Amazon ECR** for container registry
+- **Amazon S3** for static website hosting
+- **Amazon CloudFront** for CDN
 - **VPC** with public/private subnets
-- **Auto Scaling** for high availability
+- **Route 53** for DNS management
 
 ### **DevOps**
 - **Terraform** for Infrastructure as Code
 - **GitHub Actions** for CI/CD
-- **Docker** for containerization
 - **AWS CLI** for deployment automation
 
 ## 🚢 Deployment
@@ -146,13 +133,16 @@ git push origin main
 
 ### **Manual Deployment**
 ```bash
-# Deploy infrastructure
+# Deploy infrastructure only
 cd terraform/
 terraform init
 terraform apply
 
-# Deploy application
-./scripts/deploy-ecs.sh
+# Build frontend locally
+cd ..
+npm install
+npm run build
+# Upload `dist/` to your S3 bucket via AWS CLI or CI
 ```
 
 ### **Multi-Environment Support**
@@ -167,7 +157,7 @@ Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 - 📖 **[Development Setup](./docs/development/setup.md)** - Complete development environment setup
 - 🏗️ **[Infrastructure Architecture](./docs/infrastructure/architecture.md)** - AWS infrastructure deep dive
 - 🚀 **[Deployment Guide](./docs/deployment/guide.md)** - Comprehensive deployment instructions
-- 🔧 **[Scripts Documentation](./scripts/README.md)** - Deployment and utility scripts guide
+ 
 
 ### **Quick Links**
 - [Getting Started](./docs/development/setup.md#-quick-start)
@@ -191,20 +181,16 @@ npm run type-check      # TypeScript validation
 npm test               # Run tests
 npm run format         # Format with Prettier
 
-# Docker
-docker build -t sky-high-booker .
-docker run -p 3000:80 sky-high-booker
-
 # Deployment
-./scripts/dev.sh        # Quick development setup
-./scripts/deploy.sh     # Full deployment
-./scripts/deploy-ecs.sh # ECS-specific deployment
+cd terraform && terraform apply   # Provision infra
+npm run build                      # Build frontend
+# Upload `dist/` to S3 (via CI or AWS CLI)
 ```
 
 ### **Key Development Commands**
 ```bash
 # Setup new development environment
-./scripts/dev.sh
+npm install && npm run dev
 
 # Run development server with hot reload
 npm run dev
@@ -237,16 +223,15 @@ npm run test:e2e
 - **Authentication**: AWS Cognito with email/password
 - **Authorization**: IAM policies and Cognito user pools
 - **Data Protection**: HTTPS everywhere, secure headers
-- **Container Security**: Non-root user, minimal base image
 - **Infrastructure**: Private subnets, security groups, IAM roles
-- **Secrets Management**: GitHub Secrets, AWS Parameter Store
+- **Secrets Management**: GitHub Secrets, AWS Systems Manager
 
 ## 📊 Monitoring
 
-- **Application Monitoring**: ECS CloudWatch logs and metrics
-- **Infrastructure Monitoring**: ALB, ECS, and auto-scaling metrics
+- **Application Monitoring**: CloudWatch logs for Lambda functions
+- **Infrastructure Monitoring**: CloudFront, S3, and API Gateway metrics
 - **Error Tracking**: CloudWatch error logs and alarms
-- **Performance**: Response time and resource utilization tracking
+- **Performance**: CDN cache hit rates and API response times
 
 ## 🤝 Contributing
 

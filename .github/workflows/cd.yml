@@ -3,11 +3,21 @@ name: Continuous Deployment
 on:
   push:
     branches: 
+      - "dev"
       - "main"
   schedule:
     # Run daily at 8:00 AM Singapore Time (SGT = UTC+8, so 00:00 UTC)
+    # Note: Scheduled runs will deploy to dev environment by default
     - cron: '0 0 * * *'
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
 
 env:
   AWS_REGION: us-east-1
@@ -17,10 +27,11 @@ permissions:
   contents: read
 
 jobs:
-  # Deploy to production on push to main
   deploy:
-    name: Deploy to Production
+    name: Deploy to ${{ (github.event.inputs.environment == 'prod' || (github.ref == 'refs/heads/main' && github.event_name == 'push')) && 'Production' || 'Development' }}
     runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && github.event_name == 'push' && 'prod' || 'dev') }}
 
     steps:
     - name: Checkout
@@ -49,151 +60,154 @@ jobs:
     - name: Terraform Init
       run: cd terraform && terraform init
 
+    - name: Select or Create Workspace
+      run: |
+        cd terraform
+        if [ "${{ env.ENVIRONMENT }}" = "dev" ]; then
+          terraform workspace select dev || terraform workspace new dev
+        else
+          terraform workspace select prod || terraform workspace new prod
+        fi
+        terraform workspace show
+
     - name: Terraform Plan
-      run: cd terraform && terraform plan -no-color -input=false -out=tfplan
+      run: cd terraform && terraform plan -no-color -input=false -var="environment=${{ env.ENVIRONMENT }}" -out=tfplan
 
     - name: Upload Terraform Plan
       uses: actions/upload-artifact@v4
       with:
-        name: terraform-plan-cd-${{ github.sha }}
+        name: terraform-plan-${{ env.ENVIRONMENT }}-${{ github.sha }}
         path: terraform/tfplan
         retention-days: 30
 
     - name: Terraform Apply
       run: cd terraform && terraform apply -auto-approve tfplan
 
-    - name: Get AWS Account ID
-      id: aws-account
-      run: |
-        ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-        echo "account_id=$ACCOUNT_ID" >> $GITHUB_OUTPUT
-        echo "AWS Account ID: $ACCOUNT_ID"
-
-    - name: Get ECR Repository URL
-      id: ecr
+    - name: Get Terraform Outputs
+      id: terraform-outputs
       run: |
         cd terraform
-        ECR_URL=$(terraform output -raw ecr_repository_url 2>/dev/null || echo "")
-        if [ -z "$ECR_URL" ]; then
-          ECR_URL="${{ steps.aws-account.outputs.account_id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/ce11g3-sky-high-booker"
-        fi
-        echo "ecr_url=$ECR_URL" >> $GITHUB_OUTPUT
-        echo "ECR URL: $ECR_URL"
+        S3_BUCKET=$(terraform output -raw s3_bucket_name 2>/dev/null || echo "")
+        CF_DIST_ID=$(terraform output -raw cloudfront_distribution_id 2>/dev/null || echo "")
+        API_URL=$(terraform output -raw api_gateway_url 2>/dev/null || echo "")
+        USER_POOL_ID=$(terraform output -raw cognito_user_pool_id 2>/dev/null || echo "")
+        USER_POOL_CLIENT_ID=$(terraform output -raw cognito_user_pool_client_id 2>/dev/null || echo "")
+        
+        echo "s3_bucket=$S3_BUCKET" >> $GITHUB_OUTPUT
+        echo "cloudfront_distribution_id=$CF_DIST_ID" >> $GITHUB_OUTPUT
+        echo "api_gateway_url=$API_URL" >> $GITHUB_OUTPUT
+        echo "user_pool_id=$USER_POOL_ID" >> $GITHUB_OUTPUT
+        echo "user_pool_client_id=$USER_POOL_CLIENT_ID" >> $GITHUB_OUTPUT
+        
+        echo "S3 Bucket: $S3_BUCKET"
+        echo "CloudFront Distribution: $CF_DIST_ID"
 
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
 
-    - name: Build Docker Image
+    - name: Install Dependencies
+      run: npm ci
+
+    - name: Build Application
       run: |
-        echo "🐳 Building Docker image..."
-        docker build -t sky-high-booker:latest .
-        docker tag sky-high-booker:latest ${{ steps.ecr.outputs.ecr_url }}:latest
-        docker tag sky-high-booker:latest ${{ steps.ecr.outputs.ecr_url }}:${{ github.sha }}
+        echo "🏗️ Building application for ${{ env.ENVIRONMENT }} environment..."
+        npm run build
+      env:
+        VITE_AWS_REGION: ${{ env.AWS_REGION }}
+        VITE_AWS_API_GATEWAY_URL: ${{ steps.terraform-outputs.outputs.api_gateway_url }}
+        VITE_AWS_USER_POOL_ID: ${{ steps.terraform-outputs.outputs.user_pool_id }}
+        VITE_AWS_USER_POOL_CLIENT_ID: ${{ steps.terraform-outputs.outputs.user_pool_client_id }}
 
-    - name: Push Docker Image to ECR
+    - name: Upload to S3
       run: |
-        echo "📤 Pushing Docker image to ECR..."
-        docker push ${{ steps.ecr.outputs.ecr_url }}:latest
-        docker push ${{ steps.ecr.outputs.ecr_url }}:${{ github.sha }}
+        echo "📤 Uploading files to S3 (${{ env.ENVIRONMENT }})..."
+        # Upload HTML files with no-cache
+        aws s3 sync ./dist s3://${{ steps.terraform-outputs.outputs.s3_bucket }}/ \
+          --exclude "*" \
+          --include "*.html" \
+          --cache-control "no-cache, no-store, must-revalidate" \
+          --content-type "text/html" \
+          --delete
+        
+        # Upload static assets with long-term caching
+        aws s3 sync ./dist s3://${{ steps.terraform-outputs.outputs.s3_bucket }}/ \
+          --exclude "*.html" \
+          --cache-control "public, max-age=31536000, immutable" \
+          --delete
+        
+        echo "✅ Files uploaded to S3 successfully"
 
-    - name: Get ECS Cluster and Service Info
-      id: ecs-info
+    - name: Invalidate CloudFront Cache
       run: |
-        cd terraform
-        CLUSTER_NAME=$(terraform output -raw ecs_cluster_name 2>/dev/null || echo "ce11g3-ecs-cluster")
-        SERVICE_NAME=$(terraform output -raw ecs_service_name 2>/dev/null || echo "sky-high-booker")
-        echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
-        echo "service_name=$SERVICE_NAME" >> $GITHUB_OUTPUT
-        echo "ECS Cluster: $CLUSTER_NAME"
-        echo "ECS Service: $SERVICE_NAME"
-
-    - name: Force ECS Service Update
-      run: |
-        echo "🔄 Updating ECS service with new Docker image..."
-        aws ecs update-service \
-          --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
-          --service ${{ steps.ecs-info.outputs.service_name }} \
-          --force-new-deployment \
-          --region ${{ env.AWS_REGION }}
-
-    - name: Wait for ECS Service Stability
-      run: |
-        echo "⏳ Waiting for ECS service to stabilize (max 10 minutes)..."
-        aws ecs wait services-stable \
-          --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
-          --services ${{ steps.ecs-info.outputs.service_name }} \
-          --region ${{ env.AWS_REGION }} || {
-            echo "⚠️ Service did not stabilize within timeout. Checking service status..."
-            aws ecs describe-services \
-              --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
-              --services ${{ steps.ecs-info.outputs.service_name }} \
-              --region ${{ env.AWS_REGION }} \
-              --query 'services[0].[serviceName,status,runningCount,desiredCount,deployments[0].rolloutState]' \
-              --output table
-            echo "⚠️ Check CloudWatch logs and ECS console for details"
-            echo "Continuing deployment despite timeout..."
-          }
-        echo "✅ Deployment initiated successfully!"
-
-    - name: Get ECS Task Status
-      if: always()
-      run: |
-        echo "📊 Checking ECS task status..."
-        TASK_ARN=$(aws ecs list-tasks \
-          --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
-          --service-name ${{ steps.ecs-info.outputs.service_name }} \
-          --region ${{ env.AWS_REGION }} \
-          --query 'taskArns[0]' \
+        echo "🔄 Invalidating CloudFront cache (${{ env.ENVIRONMENT }})..."
+        INVALIDATION_ID=$(aws cloudfront create-invalidation \
+          --distribution-id ${{ steps.terraform-outputs.outputs.cloudfront_distribution_id }} \
+          --paths "/*" \
+          --query 'Invalidation.Id' \
           --output text)
         
-        if [ "$TASK_ARN" != "None" ] && [ -n "$TASK_ARN" ]; then
-          echo "Task ARN: $TASK_ARN"
-          aws ecs describe-tasks \
-            --cluster ${{ steps.ecs-info.outputs.cluster_name }} \
-            --tasks $TASK_ARN \
-            --region ${{ env.AWS_REGION }} \
-            --query 'tasks[0].[lastStatus,healthStatus,containers[0].lastStatus]' \
-            --output table || echo "Could not get task details"
-        else
-          echo "No tasks found for service"
-        fi
+        echo "Invalidation ID: $INVALIDATION_ID"
+        echo "✅ CloudFront cache invalidation initiated"
+
+    - name: Wait for CloudFront Invalidation
+      run: |
+        echo "⏳ Waiting for CloudFront invalidation to complete..."
+        aws cloudfront wait invalidation-completed \
+          --distribution-id ${{ steps.terraform-outputs.outputs.cloudfront_distribution_id }} \
+          --id $(aws cloudfront list-invalidations \
+            --distribution-id ${{ steps.terraform-outputs.outputs.cloudfront_distribution_id }} \
+            --query 'InvalidationList.Items[0].Id' \
+            --output text) || {
+            echo "⚠️ Invalidation still in progress. This may take a few minutes."
+            echo "Continuing deployment..."
+          }
+        echo "✅ ${{ env.ENVIRONMENT }} deployment completed successfully!"
 
     - name: Terraform Output
       run: |
         cd terraform
-        echo "## 🎉 Terraform Apply & Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+        echo "## 🎉 ${{ env.ENVIRONMENT == 'prod' && 'Production' || 'Development' }} Deployment Successful!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🏗️ AWS Resources Created/Updated" >> $GITHUB_STEP_SUMMARY
+        echo "### 🏗️ AWS Resources Created/Updated (${{ env.ENVIRONMENT }})" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Cognito User Pool & Client (Authentication)" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ DynamoDB Tables (flights, bookings, payments, user-profiles)" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ API Gateway REST API" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ S3 Bucket (static assets)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ ECS Fargate Cluster with ALB" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ ECR Repository" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ S3 Bucket (static website hosting)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ CloudFront CDN Distribution" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Lambda Functions (Booking APIs)" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Route 53 DNS & SSL Certificate" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🐳 Docker Deployment" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Docker image built successfully" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Image pushed to ECR: \`${{ steps.ecr.outputs.ecr_url }}\`" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ ECS service updated with new image" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Image tags: \`latest\`, \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 Static Website Deployment (${{ env.ENVIRONMENT }})" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Application built successfully" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Files uploaded to S3: \`${{ steps.terraform-outputs.outputs.s3_bucket }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ CloudFront cache invalidated" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Deployment commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📋 Terraform Outputs" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
         terraform output -json >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🌐 Application URLs" >> $GITHUB_STEP_SUMMARY
+        echo "### 🌐 Application URLs (${{ env.ENVIRONMENT }})" >> $GITHUB_STEP_SUMMARY
         APP_URL=$(terraform output -raw application_url 2>/dev/null || echo "N/A")
+        CF_URL=$(terraform output -raw cloudfront_url 2>/dev/null || echo "N/A")
         API_URL=$(terraform output -raw api_gateway_url 2>/dev/null || echo "N/A")
         echo "- **Application**: $APP_URL" >> $GITHUB_STEP_SUMMARY
+        echo "- **CloudFront**: $CF_URL" >> $GITHUB_STEP_SUMMARY
         echo "- **API Gateway**: $API_URL" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### ✨ Deployment Complete!" >> $GITHUB_STEP_SUMMARY
-        echo "Your application has been deployed and is now running on ECS Fargate." >> $GITHUB_STEP_SUMMARY
+        echo "Your application has been deployed to the ${{ env.ENVIRONMENT }} environment and is now live on CloudFront CDN." >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📝 Next Steps" >> $GITHUB_STEP_SUMMARY
         echo "1. Access your application using the URL above" >> $GITHUB_STEP_SUMMARY
-        echo "2. Monitor ECS service health in AWS Console" >> $GITHUB_STEP_SUMMARY
-        echo "3. Check CloudWatch logs for any issues" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ env.ENVIRONMENT }}" = "dev" ]; then
+          echo "2. Test your changes in the dev environment" >> $GITHUB_STEP_SUMMARY
+          echo "3. Create a PR to merge dev → main for production deployment" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "2. Monitor CloudFront metrics in AWS Console" >> $GITHUB_STEP_SUMMARY
+          echo "3. Check CloudWatch logs for any issues" >> $GITHUB_STEP_SUMMARY
+        fi

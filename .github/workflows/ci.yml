@@ -1,12 +1,15 @@
+# Name: Terraform Infrastructure
+# Purpose: CI checks for Terraform with linting, validation, and security scans.
 name: Terraform Infrastructure
 
 on:
   push:
-    branches: 
-      - "feature/**"
+    branches:
+      - 'feature/**'
   pull_request:
-    branches: 
-      - "main"
+    branches:
+      - 'dev'
+      - 'main'
 
 env:
   AWS_REGION: us-east-1
@@ -23,63 +26,142 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: ${{ env.TF_VERSION }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
 
-    - name: Verify Terraform Directory
-      run: |
-        echo "Current directory: $(pwd)"
-        echo "Listing workspace:"
-        ls -la
-        echo "Checking terraform directory:"
-        ls -la terraform/
-        echo "Terraform directory exists: $(test -d terraform && echo 'YES' || echo 'NO')"
+      - name: Verify Terraform Directory
+        id: check_terraform
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Listing workspace:"
+          ls -la
+          if [ -d terraform ]; then
+            echo "terraform_dir_exists=true" >> $GITHUB_OUTPUT
+            echo "Found terraform/ directory"
+            ls -la terraform/
+          else
+            echo "terraform_dir_exists=false" >> $GITHUB_OUTPUT
+            echo "No terraform/ directory — skipping Terraform steps"
+          fi
 
-    - name: Terraform Format Check
-      run: cd terraform && terraform fmt -check
+      - name: Terraform Format Check
+        if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
+        run: cd terraform && terraform fmt -check
 
-    - name: Terraform Init
-      run: cd terraform && terraform init
+      - name: Terraform Init
+        if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
+        run: cd terraform && terraform init -input=false
 
-    - name: Terraform Validate
-      run: cd terraform && terraform validate
+      - name: Terraform Validate
+        if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
+        run: cd terraform && terraform validate
 
-    - name: Setup TFLint
-      uses: terraform-linters/setup-tflint@v3
-      with:
-        tflint_version: latest
+      - name: Setup TFLint
+        if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
+        uses: terraform-linters/setup-tflint@v3
+        with:
+          tflint_version: latest
 
-    - name: Init TFLint
-      run: cd terraform && tflint --init
+      - name: Init TFLint
+        if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
+        run: cd terraform && tflint --init
 
-    - name: Run TFLint
-      run: cd terraform && tflint -f compact
+      - name: Run TFLint
+        if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
+        run: cd terraform && tflint -f compact
 
-    # Temporarily disabled - may be causing path issues
-    # - name: Checkov Security Scan
-    #   uses: bridgecrewio/checkov-action@master
-    #   with:
-    #     framework: terraform
-    #     directory: terraform
+      # Security scan for IaC - pinned action instead of @master
+      - name: Checkov Security Scan
+        if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          framework: terraform
+          directory: terraform
+        # don't block CI if checkov failures are not yet actionable
+        continue-on-error: true
 
-    - name: Terraform Plan (PR)
-      run: cd terraform && terraform plan -no-color -input=false -out=tfplan
+      - name: Terraform Plan (PR)
+        if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
+        run: cd terraform && terraform plan -no-color -input=false -out=tfplan
 
-    - name: Upload Terraform Plan
-      uses: actions/upload-artifact@v4
-      with:
-        name: terraform-plan-${{ github.sha }}
-        path: terraform/tfplan
-        retention-days: 5
+      - name: Upload Terraform Plan
+        if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ github.sha }}
+          path: terraform/tfplan
+          retention-days: 5
+
+  # Snyk security scans (depends on ci job)
+  snyk-checks:
+    name: Snyk Security Scans
+    runs-on: ubuntu-latest
+    needs: ci
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Snyk version
+        run: snyk --version
+
+      - name: Authenticate Snyk CLI
+        run: snyk auth $SNYK_TOKEN
+
+      - name: Run Snyk Code Test
+        run: snyk code test
+        continue-on-error: true
+
+      - name: Run Snyk Test
+        run: snyk test
+        continue-on-error: true
+
+      - name: Run Snyk IaC Test
+        run: snyk iac test
+        continue-on-error: true
+
+      - name: Publish to Snyk (monitor)
+        run: snyk monitor
+        continue-on-error: true
+
+  summary:
+    name: CI Summary
+    needs: [ci, snyk-checks]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add summary to Checks page
+        run: |
+          TF_STATUS=${{ needs.ci.result }}
+          SNYK_STATUS=${{ needs.snyk-checks.result }}
+
+          echo '## 🚀 Terraform & Security Summary 🚀' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+
+          echo "| Job Name        | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| terraform-check | $TF_STATUS |" >> $GITHUB_STEP_SUMMARY
+          echo "| snyk-check      | $SNYK_STATUS |" >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+
+          echo "## Job ran by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
