@@ -56,10 +56,6 @@ jobs:
             echo "No terraform/ directory — skipping Terraform steps"
           fi
 
-      - name: Terraform Format
-        if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
-        run: cd terraform && terraform fmt -recursive
-
       - name: Terraform Format Check
         if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
         run: cd terraform && terraform fmt -check
