@@ -139,7 +139,7 @@ const Auth = () => {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Plane className="w-10 h-10 text-primary" />
-            <h1 className="text-4xl font-bold">SkyWings Airlines</h1>
+            <h1 className="text-4xl font-bold">SkyHigh Airlines</h1>
           </div>
           <p className="text-muted-foreground">
             Your trusted partner for comfortable flights
@@ -160,7 +160,7 @@ const Auth = () => {
                 ? "Enter the verification code sent to your email"
                 : isLogin
                   ? "Welcome back! Sign in to continue your journey"
-                  : "Join SkyWings Airlines and start your adventure"}
+                  : "Join SkyHigh Airlines and start your adventure"}
             </CardDescription>
           </CardHeader>
           <CardContent>
