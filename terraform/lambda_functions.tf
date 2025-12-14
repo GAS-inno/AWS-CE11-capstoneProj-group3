@@ -16,9 +16,8 @@ data "archive_file" "lambda_booking_package" {
   depends_on = [null_resource.create_lambda_packages_dir]
 }
 
-# Data source to create deployment package for Discord forwarder (if enabled)
+# Data source to create deployment package for Discord forwarder
 data "archive_file" "lambda_discord_forwarder_package" {
-  count       = var.discord_webhook_url != "" ? 1 : 0
   type        = "zip"
   source_dir  = "${path.module}/../lambda/notifications"
   output_path = "${path.module}/../lambda-packages/notifications.zip"
@@ -213,12 +212,11 @@ resource "aws_lambda_function" "get_occupied_seats" {
 
 # Lambda Function: Forward SNS messages to Discord
 resource "aws_lambda_function" "discord_forwarder" {
-  count            = var.discord_webhook_url != "" ? 1 : 0
-  filename         = data.archive_file.lambda_discord_forwarder_package[0].output_path
+  filename         = data.archive_file.lambda_discord_forwarder_package.output_path
   function_name    = "${local.prefix}-forwardToDiscord"
   role             = aws_iam_role.lambda_booking_role.arn
   handler          = "forwardToDiscord.handler"
-  source_code_hash = data.archive_file.lambda_discord_forwarder_package[0].output_base64sha256
+  source_code_hash = data.archive_file.lambda_discord_forwarder_package.output_base64sha256
   runtime          = "nodejs18.x"
   timeout          = 10
   memory_size      = 128
@@ -230,6 +228,7 @@ resource "aws_lambda_function" "discord_forwarder" {
   }
 
   depends_on = [
+    aws_cloudwatch_log_group.discord_forwarder_logs,
     aws_iam_role_policy_attachment.lambda_basic_execution
   ]
 
