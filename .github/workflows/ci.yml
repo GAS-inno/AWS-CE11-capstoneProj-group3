@@ -98,7 +98,7 @@ jobs:
 
       - name: Terraform Plan (PR)
         if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
-        run: cd terraform && terraform plan -no-color -input=false -out=tfplan
+        run: cd terraform && terraform plan -no-color -input=false -refresh=false -lock=false -out=tfplan
 
       - name: Upload Terraform Plan
         if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
