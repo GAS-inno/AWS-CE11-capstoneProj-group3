@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
-import { sendChatMessage, getSystemPrompt, type ChatMessage } from '@/lib/openrouter-api';import { enrichMessageWithContext } from '@/lib/chatbot-context';import { useToast } from '@/hooks/use-toast';
+import { sendChatMessage, getSystemPrompt, type ChatMessage } from '@/lib/openrouter-api';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -41,12 +42,9 @@ export default function Chatbot() {
       return;
     }
 
-    // Enrich user message with context if relevant
-    const enrichedMessage = enrichMessageWithContext(inputValue.trim());
-    
     const userMessage: ChatMessage = {
       role: 'user',
-      content: inputValue.trim(), // Display original message to user
+      content: inputValue.trim(),
     };
 
     // Add user message to chat
@@ -55,11 +53,12 @@ export default function Chatbot() {
     setIsLoading(true);
 
     try {
-      // Prepare messages with system prompt and enriched context
+      // Prepare messages with system prompt - keep only recent messages to avoid token limits
+      const recentMessages = messages.slice(-6); // Keep last 6 messages for context
       const apiMessages: ChatMessage[] = [
         { role: 'system', content: getSystemPrompt() },
-        ...messages.filter((m) => m.role !== 'system'),
-        { role: 'user', content: enrichedMessage }, // Use enriched message for API
+        ...recentMessages.filter((m) => m.role !== 'system'),
+        userMessage,
       ];
 
       // Get AI response
@@ -105,8 +104,8 @@ export default function Chatbot() {
     <>
       {/* Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-24 right-6 w-96 h-[500px] shadow-2xl z-50 flex flex-col">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b">
+        <Card className="fixed bottom-24 right-6 w-96 h-[500px] shadow-2xl z-50 flex flex-col overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b shrink-0">
             <CardTitle className="text-lg font-semibold">Flight Assistant</CardTitle>
             <Button
               variant="ghost"
@@ -117,9 +116,9 @@ export default function Chatbot() {
               <X className="h-4 w-4" />
             </Button>
           </CardHeader>
-          <CardContent className="flex-1 flex flex-col p-0">
+          <CardContent className="flex-1 flex flex-col p-0 min-h-0">
             {/* Messages Area */}
-            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+            <ScrollArea className="flex-1 p-4 overflow-y-auto" ref={scrollRef}>
               <div className="space-y-4">
                 {messages.map((message, index) => (
                   <div
@@ -150,7 +149,7 @@ export default function Chatbot() {
             </ScrollArea>
 
             {/* Input Area */}
-            <div className="border-t p-4">
+            <div className="border-t p-4 shrink-0">
               <div className="flex gap-2">
                 <Input
                   placeholder="Type your message..."
