@@ -317,7 +317,6 @@ resource "aws_api_gateway_stage" "prod" {
     format          = "$context.requestId $context.extendedRequestId $context.identity.sourceIp $context.requestTime $context.routeKey $context.status $context.error.message"
   }
   cache_cluster_enabled = true
-  cache_cluster_size    = "0.5"
 
 }
 
