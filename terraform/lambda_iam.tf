@@ -144,10 +144,3 @@ resource "aws_cloudwatch_log_group" "get_occupied_seats_logs" {
 
   tags = local.tags
 }
-
-resource "aws_cloudwatch_log_group" "discord_forwarder_logs" {
-  name              = "/aws/lambda/${local.prefix}-forwardToDiscord"
-  retention_in_days = 7
-
-  tags = local.tags
-}
