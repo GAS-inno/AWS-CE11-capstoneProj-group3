@@ -4,15 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
-import { sendChatMessage, getSystemPrompt, type ChatMessage } from '@/lib/openrouter-api';
-import { useToast } from '@/hooks/use-toast';
+import { sendChatMessage, getSystemPrompt, type ChatMessage } from '@/lib/openrouter-api';import { enrichMessageWithContext } from '@/lib/chatbot-context';import { useToast } from '@/hooks/use-toast';
 
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
-      content: 'Hello! I\'m your flight booking assistant. How can I help you today?',
+      content: 'Hello! I\'m your Sky High Booker assistant. I can help you with:\n\n✈️ Searching for flights\n🎫 Understanding the booking process\n💺 Seat selection tips\n💰 Payment and add-ons\n📋 Managing your bookings\n\nWhat would you like to know?',
     },
   ]);
   const [inputValue, setInputValue] = useState('');
@@ -42,9 +41,12 @@ export default function Chatbot() {
       return;
     }
 
+    // Enrich user message with context if relevant
+    const enrichedMessage = enrichMessageWithContext(inputValue.trim());
+    
     const userMessage: ChatMessage = {
       role: 'user',
-      content: inputValue.trim(),
+      content: inputValue.trim(), // Display original message to user
     };
 
     // Add user message to chat
@@ -53,11 +55,11 @@ export default function Chatbot() {
     setIsLoading(true);
 
     try {
-      // Prepare messages with system prompt
+      // Prepare messages with system prompt and enriched context
       const apiMessages: ChatMessage[] = [
         { role: 'system', content: getSystemPrompt() },
         ...messages.filter((m) => m.role !== 'system'),
-        userMessage,
+        { role: 'user', content: enrichedMessage }, // Use enriched message for API
       ];
 
       // Get AI response
@@ -127,13 +129,13 @@ export default function Chatbot() {
                     }`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                      className={`max-w-[80%] rounded-lg px-4 py-2 break-words overflow-wrap-anywhere ${
                         message.role === 'user'
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-muted'
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                     </div>
                   </div>
                 ))}
