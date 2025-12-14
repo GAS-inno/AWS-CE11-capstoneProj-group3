@@ -1,14 +1,11 @@
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient, PutCommand } = require("@aws-sdk/lib-dynamodb");
-const { SNSClient, PublishCommand } = require("@aws-sdk/client-sns");
 const { v4: uuidv4 } = require('uuid');
 
 const client = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(client);
-const snsClient = new SNSClient({});
 
 const BOOKINGS_TABLE = process.env.BOOKINGS_TABLE;
-const SNS_TOPIC_ARN = process.env.SNS_TOPIC_ARN;
 
 // CORS headers
 const headers = {
@@ -79,31 +76,6 @@ exports.handler = async (event) => {
     await ddbDocClient.send(command);
 
     console.log('Booking created:', bookingId);
-
-    if (SNS_TOPIC_ARN) {
-      try {
-        const contentLines = [
-          `Booking created: ${bookingId}`,
-          `Passenger: ${booking.passenger_name} (${booking.passenger_email})`,
-          `Flight: ${booking.flight_id}`,
-          `Seat: ${booking.seat_number}`,
-          `Total: ${booking.total_amount}`,
-        ];
-
-        await snsClient.send(
-          new PublishCommand({
-            TopicArn: SNS_TOPIC_ARN,
-            Message: JSON.stringify({ content: contentLines.join("\n") }),
-          })
-        );
-
-        console.log('Published booking notification to SNS');
-      } catch (notifyError) {
-        console.warn('Failed to publish SNS notification:', notifyError);
-      }
-    } else {
-      console.log('SNS_TOPIC_ARN not set; skipping notification');
-    }
 
     return {
       statusCode: 201,
