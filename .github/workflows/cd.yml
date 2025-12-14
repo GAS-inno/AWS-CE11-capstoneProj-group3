@@ -71,8 +71,7 @@ jobs:
         terraform workspace show
 
     - name: Terraform Plan
-      run: cd terraform && terraform plan -no-color -input=false -var="environment=${{ env.ENVIRONMENT }}" -var="discord_webhook_url=${{ secrets.DISCORD_WEBHOOK_URL }}" -out=tfplan
-      
+      run: cd terraform && terraform plan -no-color -input=false -var="environment=${{ env.ENVIRONMENT }}" -out=tfplan
 
     - name: Upload Terraform Plan
       uses: actions/upload-artifact@v4

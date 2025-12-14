@@ -36,11 +36,3 @@ variable "base_domain" {
   type        = string
   default     = "sctp-sandbox.com"
 }
-
-variable "discord_webhook_url" {
-  description = "Discord webhook URL for SNS notifications"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
