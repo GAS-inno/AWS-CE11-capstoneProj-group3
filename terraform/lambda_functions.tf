@@ -16,7 +16,7 @@ data "archive_file" "lambda_booking_package" {
   depends_on = [null_resource.create_lambda_packages_dir]
 }
 
-# Data source to create deployment package for Discord forwarder
+# Data source to create deployment package for Discord forwarder (if enabled)
 data "archive_file" "lambda_discord_forwarder_package" {
   count       = var.discord_webhook_url != "" ? 1 : 0
   type        = "zip"

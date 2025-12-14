@@ -5,7 +5,7 @@ resource "aws_sns_topic" "booking_notifications" {
   tags = local.tags
 }
 
-# Allow SNS to invoke the Discord forwarder Lambda
+# Allow SNS to invoke the Discord forwarder Lambda 
 resource "aws_lambda_permission" "sns_invoke_discord_forwarder" {
   count         = var.discord_webhook_url != "" ? 1 : 0
   statement_id  = "AllowExecutionFromSNS"
