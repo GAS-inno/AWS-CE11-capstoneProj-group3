@@ -1,20 +1,17 @@
 # Route 53 Configuration for Sky High Booker
-# Creates environment-specific custom domains for the CloudFront distribution
+# Creates a custom domain for the CloudFront distribution
 
 # Data source for the existing hosted zone
 data "aws_route53_zone" "selected" {
-  name = var.base_domain
-}
-
-# Local variable for environment-specific domain
-locals {
-  full_domain_name = var.environment == "prod" ? "${var.domain_prefix}.${var.base_domain}" : "${var.domain_prefix}-${var.environment}.${var.base_domain}"
+  count = var.domain_name != "" ? 1 : 0
+  name  = "sctp-sandbox.com"
 }
 
 # Route 53 A record pointing to the CloudFront Distribution
 resource "aws_route53_record" "app_domain" {
-  zone_id = data.aws_route53_zone.selected.zone_id
-  name    = local.full_domain_name
+  count   = var.domain_name != "" ? 1 : 0
+  zone_id = data.aws_route53_zone.selected[0].zone_id
+  name    = "sky-high-booker"
   type    = "A"
 
   alias {
