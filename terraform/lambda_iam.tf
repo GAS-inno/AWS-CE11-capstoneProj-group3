@@ -60,6 +60,32 @@ resource "aws_iam_role_policy_attachment" "lambda_dynamodb" {
   role       = aws_iam_role.lambda_booking_role.name
 }
 
+# Policy for Lambda to send messages to SQS (DLQ)
+resource "aws_iam_policy" "lambda_sqs_policy" {
+  name        = "${local.prefix}-lambda-sqs-policy"
+  description = "Allow Lambda to send messages to SQS for DLQ"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage"
+        ]
+        Resource = [aws_sqs_queue.lambda_dlq.arn]
+      }
+    ]
+  })
+
+  tags = local.tags
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_sqs" {
+  policy_arn = aws_iam_policy.lambda_sqs_policy.arn
+  role       = aws_iam_role.lambda_booking_role.name
+}
+
 # CloudWatch Log Groups for Lambda functions
 resource "aws_cloudwatch_log_group" "create_booking_logs" {
   # Check: CKV_AWS_158: "Ensure that CloudWatch Log Group is encrypted by KMS"
