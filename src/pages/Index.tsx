@@ -9,7 +9,7 @@ import { Plane } from "lucide-react";
 const mockFlights = [
   // JFK to LAX
   {
-    airline: "SkyHigh",
+    airline: "SkyWings",
     flightNumber: "SW 1234",
     departure: { time: "09:00", airport: "JFK" },
     arrival: { time: "12:30", airport: "LAX" },
@@ -37,7 +37,7 @@ const mockFlights = [
   },
   // LAX to JFK
   {
-    airline: "SkyHigh",
+    airline: "SkyWings",
     flightNumber: "SW 2341",
     departure: { time: "08:00", airport: "LAX" },
     arrival: { time: "16:30", airport: "JFK" },
@@ -65,7 +65,7 @@ const mockFlights = [
     stops: 0,
   },
   {
-    airline: "SkyHigh",
+    airline: "SkyWings",
     flightNumber: "SW 7002",
     departure: { time: "22:30", airport: "JFK" },
     arrival: { time: "10:45", airport: "LHR" },
@@ -94,7 +94,7 @@ const mockFlights = [
     stops: 0,
   },
   {
-    airline: "SkyHigh",
+    airline: "SkyWings",
     flightNumber: "SW 3002",
     departure: { time: "15:15", airport: "SIN" },
     arrival: { time: "16:45", airport: "BKK" },
@@ -114,7 +114,7 @@ const mockFlights = [
   },
   // SIN to HKG
   {
-    airline: "SkyHigh",
+    airline: "SkyWings",
     flightNumber: "SW 5001",
     departure: { time: "08:00", airport: "SIN" },
     arrival: { time: "12:00", airport: "HKG" },
@@ -144,7 +144,7 @@ const mockFlights = [
   },
   // LHR to DXB
   {
-    airline: "SkyHigh",
+    airline: "SkyWings",
     flightNumber: "SW 9002",
     departure: { time: "14:00", airport: "LHR" },
     arrival: { time: "23:30", airport: "DXB" },
@@ -173,7 +173,7 @@ const mockFlights = [
   },
   // JFK to DXB
   {
-    airline: "SkyHigh",
+    airline: "SkyWings",
     flightNumber: "SW 9200",
     departure: { time: "22:00", airport: "JFK" },
     arrival: { time: "18:30", airport: "DXB" },
@@ -192,7 +192,7 @@ const mockFlights = [
   },
   // SIN to SYD
   {
-    airline: "SkyHigh",
+    airline: "SkyWings",
     flightNumber: "SW 8001",
     departure: { time: "08:00", airport: "SIN" },
     arrival: { time: "18:30", airport: "SYD" },
@@ -220,7 +220,7 @@ const mockFlights = [
     stops: 0,
   },
   {
-    airline: "SkyHigh",
+    airline: "SkyWings",
     flightNumber: "SW 8101",
     departure: { time: "22:00", airport: "SYD" },
     arrival: { time: "04:00", airport: "SIN" },
@@ -249,7 +249,7 @@ const mockFlights = [
   },
   // SIN to LHR
   {
-    airline: "SkyHigh",
+    airline: "SkyWings",
     flightNumber: "SW 7200",
     departure: { time: "23:00", airport: "SIN" },
     arrival: { time: "05:30", airport: "LHR" },
@@ -268,7 +268,7 @@ const mockFlights = [
     stops: 0,
   },
   {
-    airline: "SkyHigh",
+    airline: "SkyWings",
     flightNumber: "SW 6002",
     departure: { time: "18:00", airport: "CDG" },
     arrival: { time: "20:30", airport: "JFK" },
@@ -297,7 +297,7 @@ const mockFlights = [
   },
   // NRT to LAX
   {
-    airline: "SkyHigh",
+    airline: "SkyWings",
     flightNumber: "SW 5100",
     departure: { time: "18:00", airport: "NRT" },
     arrival: { time: "11:00", airport: "LAX" },
@@ -335,7 +335,7 @@ const mockFlights = [
     stops: 0,
   },
   {
-    airline: "SkyHigh",
+    airline: "SkyWings",
     flightNumber: "SW 4101",
     departure: { time: "16:00", airport: "HKG" },
     arrival: { time: "20:00", airport: "SIN" },
@@ -425,7 +425,7 @@ const Index = () => {
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-2 mb-4">
               <Plane className="w-10 h-10 text-primary" />
-              <h1 className="text-5xl font-bold">SkyHigh Airlines</h1>
+              <h1 className="text-5xl font-bold">SkyWings Airlines</h1>
             </div>
             <p className="text-xl text-muted-foreground">
               Your trusted partner for comfortable flights worldwide
@@ -525,13 +525,13 @@ const Index = () => {
         <div className="container mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Plane className="w-6 h-6" />
-            <span className="text-2xl font-bold">SkyHigh Airlines</span>
+            <span className="text-2xl font-bold">SkyWings Airlines</span>
           </div>
           <p className="text-primary-foreground/80">
             Your trusted partner for comfortable flights worldwide
           </p>
           <p className="text-primary-foreground/60 mt-4 text-sm">
-            © 2025 SkyHigh Airlines. All rights reserved.
+            © 2025 SkyWings Airlines. All rights reserved.
           </p>
         </div>
       </footer>

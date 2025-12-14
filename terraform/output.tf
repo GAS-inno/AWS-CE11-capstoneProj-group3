@@ -61,12 +61,12 @@ output "cloudfront_url" {
 
 output "application_url" {
   description = "Sky High Booker application URL"
-  value       = "https://${local.full_domain_name}"
+  value       = var.domain_name != "" ? "https://${var.domain_name}" : "https://${aws_cloudfront_distribution.website.domain_name}"
 }
 
 output "website_endpoint" {
   description = "Primary website endpoint"
-  value       = "https://${local.full_domain_name}"
+  value       = var.domain_name != "" ? "https://${var.domain_name}" : "https://${aws_cloudfront_distribution.website.domain_name}"
 }
 
 # ==============================================
@@ -169,15 +169,15 @@ output "dynamodb_region" {
 
 output "app_domain_name" {
   description = "Custom domain name for the application"
-  value       = local.full_domain_name
+  value       = var.domain_name
 }
 
 output "app_domain_url" {
   description = "Full HTTPS URL for the application"
-  value       = "https://${local.full_domain_name}"
+  value       = var.domain_name != "" ? "https://${var.domain_name}" : ""
 }
 
 output "ssl_certificate_arn" {
   description = "ARN of the SSL certificate"
-  value       = aws_acm_certificate.website.arn
+  value       = var.domain_name != "" ? aws_acm_certificate.website[0].arn : ""
 }

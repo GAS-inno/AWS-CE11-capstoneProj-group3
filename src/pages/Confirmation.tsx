@@ -146,7 +146,7 @@ const Confirmation = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-2">
             <Plane className="w-6 h-6 text-primary" />
-            <h1 className="text-2xl font-bold">SkyHigh Airlines</h1>
+            <h1 className="text-2xl font-bold">SkyWings Airlines</h1>
           </div>
         </div>
       </header>
