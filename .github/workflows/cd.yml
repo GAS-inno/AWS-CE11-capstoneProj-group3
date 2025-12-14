@@ -82,7 +82,7 @@ jobs:
         retention-days: 30
 
     - name: Terraform Apply
-      run: cd terraform && terraform apply -auto-approve tfplan
+      run: cd terraform && terraform apply -auto-approve -var="discord_webhook_url=${{ secrets.DISCORD_WEBHOOK_URL }}" tfplan
 
     - name: Get Terraform Outputs
       id: terraform-outputs
