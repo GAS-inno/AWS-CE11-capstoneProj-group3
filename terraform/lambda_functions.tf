@@ -63,8 +63,7 @@ resource "aws_lambda_function" "create_booking" {
     aws_cloudwatch_log_group.create_booking_logs,
     aws_iam_role_policy_attachment.lambda_basic_execution,
     aws_iam_role_policy_attachment.lambda_dynamodb,
-    aws_iam_role_policy_attachment.lambda_xray_write,
-    aws_iam_role_policy_attachment.lambda_sqs
+    aws_iam_role_policy_attachment.lambda_xray_write
   ]
 
   tags = local.tags
@@ -104,8 +103,7 @@ resource "aws_lambda_function" "get_bookings" {
     aws_cloudwatch_log_group.get_bookings_logs,
     aws_iam_role_policy_attachment.lambda_basic_execution,
     aws_iam_role_policy_attachment.lambda_dynamodb,
-    aws_iam_role_policy_attachment.lambda_xray_write,
-    aws_iam_role_policy_attachment.lambda_sqs
+    aws_iam_role_policy_attachment.lambda_xray_write
   ]
 
   tags = local.tags
@@ -146,8 +144,7 @@ resource "aws_lambda_function" "get_booking_by_id" {
     aws_cloudwatch_log_group.get_booking_by_id_logs,
     aws_iam_role_policy_attachment.lambda_basic_execution,
     aws_iam_role_policy_attachment.lambda_dynamodb,
-    aws_iam_role_policy_attachment.lambda_xray_write,
-    aws_iam_role_policy_attachment.lambda_sqs
+    aws_iam_role_policy_attachment.lambda_xray_write
   ]
 
   tags = local.tags
@@ -187,8 +184,7 @@ resource "aws_lambda_function" "get_occupied_seats" {
     aws_cloudwatch_log_group.get_occupied_seats_logs,
     aws_iam_role_policy_attachment.lambda_basic_execution,
     aws_iam_role_policy_attachment.lambda_dynamodb,
-    aws_iam_role_policy_attachment.lambda_xray_write,
-    aws_iam_role_policy_attachment.lambda_sqs
+    aws_iam_role_policy_attachment.lambda_xray_write
   ]
 
   tags = local.tags
