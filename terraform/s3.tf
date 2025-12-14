@@ -5,7 +5,6 @@ resource "aws_s3_bucket" "website" {
   # Checkov notes:
   # CKV2_AWS_62: Ensure S3 buckets should have event notifications enabled
   # CKV2_AWS_61: Ensure that an S3 bucket has a lifecycle configuration
-  # CKV_AWS_18: Ensure the S3 bucket has access logging enabled
   # CKV_AWS_144: Ensure that S3 bucket has cross-region replication enabled
   # CKV2_AWS_6: Ensure that S3 bucket has a Public Access block
 
@@ -15,6 +14,14 @@ resource "aws_s3_bucket" "website" {
   tags = merge(local.tags, {
     Name = "${var.name_prefix}sky-high-booker-website"
   })
+}
+
+# S3 bucket logging (logs stored in the same bucket under logs/ prefix)
+resource "aws_s3_bucket_logging" "website" {
+  bucket = aws_s3_bucket.website.id
+
+  target_bucket = aws_s3_bucket.website.id
+  target_prefix = "logs/"
 }
 
 # S3 bucket ownership controls
