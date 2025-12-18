@@ -316,8 +316,7 @@ resource "aws_api_gateway_stage" "prod" {
     destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
     format          = "$context.requestId $context.extendedRequestId $context.identity.sourceIp $context.requestTime $context.routeKey $context.status $context.error.message"
   }
-  cache_cluster_enabled = true
-  cache_cluster_size    = "0.5"
+  cache_cluster_enabled = false
 
 }
 
