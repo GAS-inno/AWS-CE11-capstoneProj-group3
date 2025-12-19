@@ -171,7 +171,7 @@ resource "aws_api_gateway_method" "options_bookings" {
   resource_id      = aws_api_gateway_resource.bookings.id
   http_method      = "OPTIONS"
   authorization    = "NONE"
-  api_key_required = true
+  api_key_required = false
 }
 
 resource "aws_api_gateway_integration" "options_bookings" {
@@ -218,7 +218,7 @@ resource "aws_api_gateway_method" "options_occupied_seats" {
   resource_id      = aws_api_gateway_resource.occupied_seats.id
   http_method      = "OPTIONS"
   authorization    = "NONE"
-  api_key_required = true
+  api_key_required = false
 }
 
 resource "aws_api_gateway_integration" "options_occupied_seats" {
