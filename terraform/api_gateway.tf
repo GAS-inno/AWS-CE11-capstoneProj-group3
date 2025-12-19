@@ -46,7 +46,7 @@ resource "aws_api_gateway_method" "create_booking" {
   resource_id      = aws_api_gateway_resource.bookings.id
   http_method      = "POST"
   authorization    = "NONE"
-  api_key_required = true
+  api_key_required = false
 }
 
 resource "aws_api_gateway_method_response" "create_booking_200" {
@@ -76,7 +76,7 @@ resource "aws_api_gateway_method" "get_bookings" {
   resource_id      = aws_api_gateway_resource.bookings.id
   http_method      = "GET"
   authorization    = "NONE"
-  api_key_required = true
+  api_key_required = false
 
 }
 
@@ -109,7 +109,7 @@ resource "aws_api_gateway_method" "get_booking_by_id" {
   resource_id      = aws_api_gateway_resource.booking_by_id.id
   http_method      = "GET"
   authorization    = "NONE"
-  api_key_required = true
+  api_key_required = false
 }
 
 resource "aws_api_gateway_method_response" "get_booking_by_id_200" {
@@ -141,7 +141,7 @@ resource "aws_api_gateway_method" "get_occupied_seats" {
   resource_id      = aws_api_gateway_resource.occupied_seats.id
   http_method      = "GET"
   authorization    = "NONE"
-  api_key_required = true
+  api_key_required = false
 }
 
 resource "aws_api_gateway_method_response" "get_occupied_seats_200" {
