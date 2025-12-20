@@ -39,12 +39,3 @@ jobs:
     - name: Destruction Complete
       run: |
         echo "🗑️ All Terraform resources have been destroyed!"
-        echo "The following resources were removed:"
-        echo "- API Gateway"
-        echo "- Lambda functions (bookings)"
-        echo "- DynamoDB tables"
-        echo "- Cognito user pool"
-        echo "- ECS cluster and services"
-        echo "- ECR repository"
-        echo "- Route53 records"
-        echo "- IAM roles and policies"

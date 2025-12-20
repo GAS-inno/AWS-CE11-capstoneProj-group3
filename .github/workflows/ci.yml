@@ -3,9 +3,6 @@
 name: Terraform Infrastructure
 
 on:
-  push:
-    branches:
-      - 'feature/**'
   pull_request:
     branches:
       - 'dev'
@@ -159,7 +156,7 @@ jobs:
           TF_STATUS=${{ needs.ci.result }}
           SNYK_STATUS=${{ needs.snyk-checks.result }}
 
-          echo '## 🚀 Terraform & Security Summary 🚀' >> $GITHUB_STEP_SUMMARY
+          echo '## Terraform & Security Summary' >> $GITHUB_STEP_SUMMARY
           echo '' >> $GITHUB_STEP_SUMMARY
 
           echo "| Job Name        | Status |" >> $GITHUB_STEP_SUMMARY
