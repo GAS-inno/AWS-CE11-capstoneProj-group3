@@ -125,7 +125,7 @@ jobs:
 
     - name: Upload to S3
       run: |
-        echo "📤 Uploading files to S3 (${{ env.ENVIRONMENT }})..."
+        echo "Uploading files to S3 (${{ env.ENVIRONMENT }})..."
         # Upload HTML files with no-cache
         aws s3 sync ./dist s3://${{ steps.terraform-outputs.outputs.s3_bucket }}/ \
           --exclude "*" \
@@ -140,11 +140,11 @@ jobs:
           --cache-control "public, max-age=31536000, immutable" \
           --delete
         
-        echo "✅ Files uploaded to S3 successfully"
+        echo "Files uploaded to S3 successfully"
 
     - name: Invalidate CloudFront Cache
       run: |
-        echo "🔄 Invalidating CloudFront cache (${{ env.ENVIRONMENT }})..."
+        echo "Invalidating CloudFront cache (${{ env.ENVIRONMENT }})..."
         INVALIDATION_ID=$(aws cloudfront create-invalidation \
           --distribution-id ${{ steps.terraform-outputs.outputs.cloudfront_distribution_id }} \
           --paths "/*" \
@@ -152,48 +152,43 @@ jobs:
           --output text)
         
         echo "Invalidation ID: $INVALIDATION_ID"
-        echo "✅ CloudFront cache invalidation initiated"
+        echo "CloudFront cache invalidation initiated"
 
     - name: Wait for CloudFront Invalidation
       run: |
-        echo "⏳ Waiting for CloudFront invalidation to complete..."
+        echo "Waiting for CloudFront invalidation to complete..."
         aws cloudfront wait invalidation-completed \
           --distribution-id ${{ steps.terraform-outputs.outputs.cloudfront_distribution_id }} \
           --id $(aws cloudfront list-invalidations \
             --distribution-id ${{ steps.terraform-outputs.outputs.cloudfront_distribution_id }} \
             --query 'InvalidationList.Items[0].Id' \
             --output text) || {
-            echo "⚠️ Invalidation still in progress. This may take a few minutes."
+            echo "Invalidation still in progress. This may take a few minutes."
             echo "Continuing deployment..."
           }
-        echo "✅ ${{ env.ENVIRONMENT }} deployment completed successfully!"
+        echo "${{ env.ENVIRONMENT }} deployment completed successfully!"
 
     - name: Terraform Output
       run: |
         cd terraform
-        echo "## 🎉 ${{ env.ENVIRONMENT == 'prod' && 'Production' || 'Development' }} Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+        echo "## ${{ env.ENVIRONMENT == 'prod' && 'Production' || 'Development' }} Deployment Successful!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 🏗️ AWS Resources Created/Updated (${{ env.ENVIRONMENT }})" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Cognito User Pool & Client (Authentication)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ DynamoDB Tables (flights, bookings, payments, user-profiles)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ API Gateway REST API" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ S3 Bucket (static website hosting)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ CloudFront CDN Distribution" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Lambda Functions (Booking APIs)" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Route 53 DNS & SSL Certificate" >> $GITHUB_STEP_SUMMARY
+        echo "- Cognito User Pool & Client (Authentication)" >> $GITHUB_STEP_SUMMARY
+        echo "- DynamoDB Tables (flights, bookings, payments, user-profiles)" >> $GITHUB_STEP_SUMMARY
+        echo "- API Gateway REST API" >> $GITHUB_STEP_SUMMARY
+        echo "- S3 Bucket (static website hosting)" >> $GITHUB_STEP_SUMMARY
+        echo "- CloudFront CDN Distribution" >> $GITHUB_STEP_SUMMARY
+        echo "- Lambda Functions (Booking APIs)" >> $GITHUB_STEP_SUMMARY
+        echo "- Route 53 DNS & SSL Certificate" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📦 Static Website Deployment (${{ env.ENVIRONMENT }})" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Application built successfully" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Files uploaded to S3: \`${{ steps.terraform-outputs.outputs.s3_bucket }}\`" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ CloudFront cache invalidated" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ Deployment commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "### Static Website Deployment (${{ env.ENVIRONMENT }})" >> $GITHUB_STEP_SUMMARY
+        echo "- Application built successfully" >> $GITHUB_STEP_SUMMARY
+        echo "- Files uploaded to S3: \`${{ steps.terraform-outputs.outputs.s3_bucket }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "- CloudFront cache invalidated" >> $GITHUB_STEP_SUMMARY
+        echo "- Deployment commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📋 Terraform Outputs" >> $GITHUB_STEP_SUMMARY
-        echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
-        terraform output -json >> $GITHUB_STEP_SUMMARY
-        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🌐 Application URLs (${{ env.ENVIRONMENT }})" >> $GITHUB_STEP_SUMMARY
+        echo "### Application URLs (${{ env.ENVIRONMENT }})" >> $GITHUB_STEP_SUMMARY
         APP_URL=$(terraform output -raw application_url 2>/dev/null || echo "N/A")
         CF_URL=$(terraform output -raw cloudfront_url 2>/dev/null || echo "N/A")
         API_URL=$(terraform output -raw api_gateway_url 2>/dev/null || echo "N/A")

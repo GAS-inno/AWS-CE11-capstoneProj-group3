@@ -425,7 +425,7 @@ const Index = () => {
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-2 mb-4">
               <Plane className="w-10 h-10 text-primary" />
-              <h1 className="text-5xl font-bold">SkyHigh Airlines</h1>
+              <h1 className="text-5xl font-bold">Sky High Booker</h1>
             </div>
             <p className="text-xl text-muted-foreground">
               Your trusted partner for comfortable flights worldwide
