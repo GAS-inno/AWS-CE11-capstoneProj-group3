@@ -86,6 +86,32 @@ resource "aws_iam_role_policy_attachment" "lambda_sqs" {
   role       = aws_iam_role.lambda_booking_role.name
 }
 
+# Policy for Lambda to publish to SNS
+resource "aws_iam_policy" "lambda_sns_policy" {
+  name        = "${local.prefix}-lambda-sns-policy"
+  description = "Allow Lambda to publish to SNS for Discord notifications"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "sns:Publish"
+        ]
+        Resource = aws_sns_topic.booking_notifications.arn
+      }
+    ]
+  })
+
+  tags = local.tags
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_sns" {
+  policy_arn = aws_iam_policy.lambda_sns_policy.arn
+  role       = aws_iam_role.lambda_booking_role.name
+}
+
 # CloudWatch Log Groups for Lambda functions
 resource "aws_cloudwatch_log_group" "create_booking_logs" {
   # Check: CKV_AWS_158: "Ensure that CloudWatch Log Group is encrypted by KMS"
@@ -114,6 +140,13 @@ resource "aws_cloudwatch_log_group" "get_booking_by_id_logs" {
 
 resource "aws_cloudwatch_log_group" "get_occupied_seats_logs" {
   name              = "/aws/lambda/${local.prefix}-getOccupiedSeats"
+  retention_in_days = 7
+
+  tags = local.tags
+}
+
+resource "aws_cloudwatch_log_group" "discord_forwarder_logs" {
+  name              = "/aws/lambda/${local.prefix}-forwardToDiscord"
   retention_in_days = 7
 
   tags = local.tags

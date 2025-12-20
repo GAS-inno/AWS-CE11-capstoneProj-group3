@@ -3,9 +3,6 @@
 name: Terraform Infrastructure
 
 on:
-  push:
-    branches:
-      - 'feature/**'
   pull_request:
     branches:
       - 'dev'
@@ -56,6 +53,10 @@ jobs:
             echo "No terraform/ directory — skipping Terraform steps"
           fi
 
+      - name: Terraform Format
+        if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
+        run: cd terraform && terraform fmt -recursive
+
       - name: Terraform Format Check
         if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
         run: cd terraform && terraform fmt -check
@@ -94,7 +95,7 @@ jobs:
 
       - name: Terraform Plan (PR)
         if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
-        run: cd terraform && terraform plan -no-color -input=false -out=tfplan
+        run: cd terraform && terraform plan -no-color -input=false -refresh=false -lock=false -out=tfplan
 
       - name: Upload Terraform Plan
         if: steps.check_terraform.outputs.terraform_dir_exists == 'true'
@@ -155,7 +156,7 @@ jobs:
           TF_STATUS=${{ needs.ci.result }}
           SNYK_STATUS=${{ needs.snyk-checks.result }}
 
-          echo '## 🚀 Terraform & Security Summary 🚀' >> $GITHUB_STEP_SUMMARY
+          echo '## Terraform & Security Summary' >> $GITHUB_STEP_SUMMARY
           echo '' >> $GITHUB_STEP_SUMMARY
 
           echo "| Job Name        | Status |" >> $GITHUB_STEP_SUMMARY

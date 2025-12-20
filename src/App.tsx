@@ -14,6 +14,7 @@ import AddOns from "./pages/AddOns";
 import Payment from "./pages/Payment";
 import Confirmation from "./pages/Confirmation";
 import NotFound from "./pages/NotFound";
+import Chatbot from "./components/Chatbot";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <Chatbot />
           </BrowserRouter>
         </TooltipProvider>
       </CurrencyProvider>
