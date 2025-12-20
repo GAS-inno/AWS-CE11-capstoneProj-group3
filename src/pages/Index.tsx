@@ -525,13 +525,13 @@ const Index = () => {
         <div className="container mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Plane className="w-6 h-6" />
-            <span className="text-2xl font-bold">SkyHigh Airlines</span>
+            <span className="text-2xl font-bold">Sky High Booker</span>
           </div>
           <p className="text-primary-foreground/80">
             Your trusted partner for comfortable flights worldwide
           </p>
           <p className="text-primary-foreground/60 mt-4 text-sm">
-            © 2025 SkyHigh Airlines. All rights reserved.
+            © 2025 Sky High Booker. All rights reserved.
           </p>
         </div>
       </footer>
