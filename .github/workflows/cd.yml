@@ -173,7 +173,7 @@ jobs:
         cd terraform
         echo "## ${{ env.ENVIRONMENT == 'prod' && 'Production' || 'Development' }} Deployment Successful!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 🏗️ AWS Resources Created/Updated (${{ env.ENVIRONMENT }})" >> $GITHUB_STEP_SUMMARY
+        echo "### AWS Resources Created/Updated (${{ env.ENVIRONMENT }})" >> $GITHUB_STEP_SUMMARY
         echo "- Cognito User Pool & Client (Authentication)" >> $GITHUB_STEP_SUMMARY
         echo "- DynamoDB Tables (flights, bookings, payments, user-profiles)" >> $GITHUB_STEP_SUMMARY
         echo "- API Gateway REST API" >> $GITHUB_STEP_SUMMARY
@@ -196,10 +196,10 @@ jobs:
         echo "- **CloudFront**: $CF_URL" >> $GITHUB_STEP_SUMMARY
         echo "- **API Gateway**: $API_URL" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### ✨ Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+        echo "### Deployment Complete!" >> $GITHUB_STEP_SUMMARY
         echo "Your application has been deployed to the ${{ env.ENVIRONMENT }} environment and is now live on CloudFront CDN." >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📝 Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
         echo "1. Access your application using the URL above" >> $GITHUB_STEP_SUMMARY
         if [ "${{ env.ENVIRONMENT }}" = "dev" ]; then
           echo "2. Test your changes in the dev environment" >> $GITHUB_STEP_SUMMARY
