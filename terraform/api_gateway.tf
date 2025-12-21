@@ -37,6 +37,13 @@ resource "aws_api_gateway_resource" "occupied_seats" {
   path_part   = "occupied-seats"
 }
 
+# /chatbot resource
+resource "aws_api_gateway_resource" "chatbot" {
+  rest_api_id = aws_api_gateway_rest_api.booking_api.id
+  parent_id   = aws_api_gateway_rest_api.booking_api.root_resource_id
+  path_part   = "chatbot"
+}
+
 # POST /bookings - Create Booking
 resource "aws_api_gateway_method" "create_booking" {
   # Check: CKV_AWS_59: "Ensure there is no open access to back-end resources through API"
@@ -164,6 +171,83 @@ resource "aws_api_gateway_integration" "get_occupied_seats" {
   uri                     = aws_lambda_function.get_occupied_seats.invoke_arn
 }
 
+# POST /chatbot - Chat with AI
+resource "aws_api_gateway_method" "post_chatbot" {
+  rest_api_id      = aws_api_gateway_rest_api.booking_api.id
+  resource_id      = aws_api_gateway_resource.chatbot.id
+  http_method      = "POST"
+  authorization    = "NONE"
+  api_key_required = false
+}
+
+resource "aws_api_gateway_method_response" "post_chatbot_200" {
+  rest_api_id = aws_api_gateway_rest_api.booking_api.id
+  resource_id = aws_api_gateway_resource.chatbot.id
+  http_method = aws_api_gateway_method.post_chatbot.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = true
+  }
+}
+
+resource "aws_api_gateway_integration" "post_chatbot" {
+  rest_api_id             = aws_api_gateway_rest_api.booking_api.id
+  resource_id             = aws_api_gateway_resource.chatbot.id
+  http_method             = aws_api_gateway_method.post_chatbot.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.chatbot_proxy.invoke_arn
+}
+
+# OPTIONS /chatbot - CORS preflight
+resource "aws_api_gateway_method" "options_chatbot" {
+  rest_api_id      = aws_api_gateway_rest_api.booking_api.id
+  resource_id      = aws_api_gateway_resource.chatbot.id
+  http_method      = "OPTIONS"
+  authorization    = "NONE"
+  api_key_required = false
+}
+
+resource "aws_api_gateway_integration" "options_chatbot" {
+  rest_api_id = aws_api_gateway_rest_api.booking_api.id
+  resource_id = aws_api_gateway_resource.chatbot.id
+  http_method = aws_api_gateway_method.options_chatbot.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "options_chatbot_200" {
+  rest_api_id = aws_api_gateway_rest_api.booking_api.id
+  resource_id = aws_api_gateway_resource.chatbot.id
+  http_method = aws_api_gateway_method.options_chatbot.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Headers" = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "options_chatbot_200" {
+  rest_api_id = aws_api_gateway_rest_api.booking_api.id
+  resource_id = aws_api_gateway_resource.chatbot.id
+  http_method = aws_api_gateway_method.options_chatbot.http_method
+  status_code = aws_api_gateway_method_response.options_chatbot_200.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+    "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,Authorization'"
+  }
+
+  depends_on = [aws_api_gateway_integration.options_chatbot]
+}
+
 # CORS - OPTIONS methods
 resource "aws_api_gateway_method" "options_bookings" {
   # Check: CKV2_AWS_53: "Ensure AWS API gateway request is validated"
@@ -267,14 +351,17 @@ resource "aws_api_gateway_deployment" "booking_api" {
       aws_api_gateway_resource.bookings.id,
       aws_api_gateway_resource.booking_by_id.id,
       aws_api_gateway_resource.occupied_seats.id,
+      aws_api_gateway_resource.chatbot.id,
       aws_api_gateway_method.create_booking.id,
       aws_api_gateway_method.get_bookings.id,
       aws_api_gateway_method.get_booking_by_id.id,
       aws_api_gateway_method.get_occupied_seats.id,
+      aws_api_gateway_method.post_chatbot.id,
       aws_api_gateway_integration.create_booking.id,
       aws_api_gateway_integration.get_bookings.id,
       aws_api_gateway_integration.get_booking_by_id.id,
       aws_api_gateway_integration.get_occupied_seats.id,
+      aws_api_gateway_integration.post_chatbot.id,
     ]))
   }
 
@@ -287,6 +374,7 @@ resource "aws_api_gateway_deployment" "booking_api" {
     aws_api_gateway_integration.get_bookings,
     aws_api_gateway_integration.get_booking_by_id,
     aws_api_gateway_integration.get_occupied_seats,
+    aws_api_gateway_integration.post_chatbot,
     aws_api_gateway_integration.options_bookings
   ]
 }

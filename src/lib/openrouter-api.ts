@@ -1,10 +1,9 @@
 /**
- * OpenRouter API integration
- * Uses the free model: meta-llama/llama-3.2-3b-instruct:free
+ * OpenRouter API integration via Lambda proxy
+ * API key is now secured server-side
  */
 
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const FREE_MODEL = 'meta-llama/llama-3.2-3b-instruct:free';
+import { apiGatewayUrl } from './aws-config';
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -28,36 +27,28 @@ export interface ChatResponse {
 }
 
 /**
- * Send a chat message to OpenRouter API
+ * Send a chat message to OpenRouter API via Lambda proxy
  * @param messages - Array of chat messages in the conversation
- * @param apiKey - OpenRouter API key (from environment variable)
  * @returns Response from the AI model
  */
 export async function sendChatMessage(
-  messages: ChatMessage[],
-  apiKey: string
+  messages: ChatMessage[]
 ): Promise<string> {
   try {
-    const response = await fetch(OPENROUTER_API_URL, {
+    const response = await fetch(`${apiGatewayUrl}/chatbot`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': window.location.origin,
-        'X-Title': 'Flight Booking Assistant',
       },
       body: JSON.stringify({
-        model: FREE_MODEL,
         messages: messages,
-        temperature: 0.7,
-        max_tokens: 800,
       }),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
-        `OpenRouter API error: ${response.status} - ${errorData.error?.message || response.statusText}`
+        `Chatbot API error: ${response.status} - ${errorData.error || response.statusText}`
       );
     }
 
@@ -69,7 +60,7 @@ export async function sendChatMessage(
 
     return data.choices[0].message.content;
   } catch (error) {
-    console.error('Error calling OpenRouter API:', error);
+    console.error('Error calling chatbot API:', error);
     throw error;
   }
 }
