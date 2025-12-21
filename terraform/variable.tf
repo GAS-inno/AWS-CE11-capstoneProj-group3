@@ -44,3 +44,10 @@ variable "discord_webhook_url" {
   default     = ""
 }
 
+variable "openrouter_api_key" {
+  description = "OpenRouter API key for chatbot functionality"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+

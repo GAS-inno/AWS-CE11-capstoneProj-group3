@@ -20,9 +20,6 @@ export default function Chatbot() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Get API key from environment variable
-  const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
-
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
@@ -32,15 +29,6 @@ export default function Chatbot() {
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
-
-    if (!apiKey) {
-      toast({
-        title: 'Configuration Error',
-        description: 'OpenRouter API key is not configured. Please set VITE_OPENROUTER_API_KEY in your environment.',
-        variant: 'destructive',
-      });
-      return;
-    }
 
     const userMessage: ChatMessage = {
       role: 'user',
@@ -61,8 +49,8 @@ export default function Chatbot() {
         userMessage,
       ];
 
-      // Get AI response
-      const aiResponse = await sendChatMessage(apiMessages, apiKey);
+      // Get AI response from Lambda proxy
+      const aiResponse = await sendChatMessage(apiMessages);
 
       // Add AI response to chat
       setMessages((prev) => [

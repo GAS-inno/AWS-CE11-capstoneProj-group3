@@ -25,6 +25,15 @@ data "archive_file" "lambda_discord_forwarder_package" {
   depends_on = [null_resource.create_lambda_packages_dir]
 }
 
+# Data source to create deployment package for Chatbot proxy
+data "archive_file" "lambda_chatbot_package" {
+  type        = "zip"
+  source_dir  = "${path.module}/../lambda/chatbot"
+  output_path = "${path.module}/../lambda-packages/chatbot.zip"
+
+  depends_on = [null_resource.create_lambda_packages_dir]
+}
+
 # SQS Dead Letter Queue for Lambda errors
 resource "aws_sqs_queue" "lambda_dlq" {
   name                      = "${local.prefix}-lambda-dlq"
@@ -264,6 +273,59 @@ resource "aws_lambda_permission" "get_occupied_seats_apigw" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.get_occupied_seats.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.booking_api.execution_arn}/*/*"
+}
+
+# Lambda Function: Chatbot OpenRouter Proxy
+resource "aws_lambda_function" "chatbot_proxy" {
+  # checkov:skip=CKV_AWS_117: VPC configuration deferred to Phase 2
+  # checkov:skip=CKV_AWS_173: KMS environment variable encryption out of scope for MVP
+  # checkov:skip=CKV_AWS_272: Code-signing validation deferred
+  filename         = data.archive_file.lambda_chatbot_package.output_path
+  function_name    = "${local.prefix}-chatbotProxy"
+  role             = aws_iam_role.lambda_chatbot_role.arn
+  handler          = "chatProxy.handler"
+  source_code_hash = data.archive_file.lambda_chatbot_package.output_base64sha256
+  runtime          = "nodejs18.x"
+  timeout          = 30 # Longer timeout for external API call
+  memory_size      = 256
+
+  environment {
+    variables = {
+      OPENROUTER_API_KEY = var.openrouter_api_key
+      SITE_URL           = "https://${var.domain_name}"
+    }
+  }
+
+  dead_letter_config {
+    target_arn = aws_sqs_queue.lambda_dlq.arn
+  }
+
+  tracing_config {
+    mode = "Active"
+  }
+
+  depends_on = [
+    aws_cloudwatch_log_group.chatbot_proxy_logs,
+    aws_iam_role_policy_attachment.lambda_chatbot_basic_execution
+  ]
+
+  tags = local.tags
+}
+
+# CloudWatch Log Group for Chatbot Proxy
+resource "aws_cloudwatch_log_group" "chatbot_proxy_logs" {
+  name              = "/aws/lambda/${local.prefix}-chatbotProxy"
+  retention_in_days = 7
+  tags              = local.tags
+}
+
+# Lambda Permission for Chatbot Proxy
+resource "aws_lambda_permission" "chatbot_proxy_apigw" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.chatbot_proxy.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.booking_api.execution_arn}/*/*"
 }

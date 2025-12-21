@@ -55,6 +55,10 @@ jobs:
         echo "📦 Installing Lambda dependencies..."
         cd lambda/bookings
         npm install --production
+        cd ../notifications
+        npm install --production
+        cd ../chatbot
+        npm install --production
         cd ../..
 
     - name: Terraform Init
@@ -71,7 +75,7 @@ jobs:
         terraform workspace show
 
     - name: Terraform Plan
-      run: cd terraform && terraform plan -no-color -input=false -var="environment=${{ env.ENVIRONMENT }}" -var="discord_webhook_url=${{ secrets.DISCORD_WEBHOOK_URL }}" -out=tfplan
+      run: cd terraform && terraform plan -no-color -input=false -var="environment=${{ env.ENVIRONMENT }}" -var="discord_webhook_url=${{ secrets.DISCORD_WEBHOOK_URL }}" -var="openrouter_api_key=${{ secrets.OPENROUTER_API_KEY }}" -out=tfplan
       
 
     - name: Upload Terraform Plan
@@ -121,7 +125,6 @@ jobs:
         VITE_AWS_API_GATEWAY_URL: ${{ steps.terraform-outputs.outputs.api_gateway_url }}
         VITE_AWS_USER_POOL_ID: ${{ steps.terraform-outputs.outputs.user_pool_id }}
         VITE_AWS_USER_POOL_CLIENT_ID: ${{ steps.terraform-outputs.outputs.user_pool_client_id }}
-        VITE_OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
     - name: Upload to S3
       run: |
