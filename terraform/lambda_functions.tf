@@ -294,7 +294,7 @@ resource "aws_lambda_function" "chatbot_proxy" {
   environment {
     variables = {
       OPENROUTER_API_KEY = var.openrouter_api_key
-      SITE_URL           = "https://${var.domain_name}"
+      SITE_URL           = "https://${local.full_domain_name}"
     }
   }
 
