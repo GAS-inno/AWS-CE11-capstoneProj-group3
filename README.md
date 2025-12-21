@@ -224,8 +224,8 @@ npm run test:e2e
 - **Authorization**: IAM policies and Cognito user pools
 - **Data Protection**: HTTPS everywhere, secure headers
 - **Infrastructure**: Private subnets, security groups, IAM roles
-- **Secrets Management**: GitHub Secrets, AWS Systems Manager
-
+- **Secrets Management**: GitHub Secrets
+  
 ## 📊 Monitoring
 
 - **Application Monitoring**: CloudWatch logs for Lambda functions
@@ -249,10 +249,6 @@ npm run test:e2e
 - Add tests for new features
 - Update documentation as needed
 - Ensure CI passes before merging
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 👥 Team
 
@@ -307,23 +303,6 @@ cd terraform
 terraform init
 terraform apply
 ```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For support and questions, please open an issue in the GitHub repository.
-
 ---
 
 Built with ❤️ by the CE11 Group 3 Team
