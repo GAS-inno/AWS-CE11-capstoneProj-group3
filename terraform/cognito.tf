@@ -1,6 +1,6 @@
 # AWS Cognito User Pool for Authentication
 resource "aws_cognito_user_pool" "user_pool" {
-  name = "${var.project_name}-user-pool"
+  name = "${var.project_name}-user-pool-${var.environment}"
 
   # Allow users to sign in with email
   username_attributes = ["email"]
@@ -71,7 +71,7 @@ resource "aws_cognito_user_pool" "user_pool" {
 
 # Cognito User Pool Client
 resource "aws_cognito_user_pool_client" "user_pool_client" {
-  name         = "${var.project_name}-client"
+  name         = "${var.project_name}-client-${var.environment}"
   user_pool_id = aws_cognito_user_pool.user_pool.id
 
   # App client settings
@@ -114,7 +114,7 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
 
 # Cognito Identity Pool for AWS resource access
 resource "aws_cognito_identity_pool" "identity_pool" {
-  identity_pool_name               = "${var.project_name}-identity-pool"
+  identity_pool_name               = "${var.project_name}-identity-pool-${var.environment}"
   allow_unauthenticated_identities = false
   allow_classic_flow               = false
 
