@@ -58,4 +58,7 @@ export const configureAWS = () => {
   }
 }
 
+// Export API Gateway URL for direct API calls
+export const apiGatewayUrl = import.meta.env.VITE_AWS_API_GATEWAY_URL || 'VITE_AWS_API_GATEWAY_URL_PLACEHOLDER'
+
 export { amplifyConfig }
