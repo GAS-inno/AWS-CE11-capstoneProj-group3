@@ -20,7 +20,7 @@
 
 ## 🏗️ Architecture
 
-![diagram](diagrams/architecture1.drawio.png)
+![diagram](diagrams/architecture2.drawio.png)
 
 ## Quick Start
 
