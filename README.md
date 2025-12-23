@@ -36,7 +36,7 @@ Intelligent chatbot integration provides:
 
 ![diagram](diagrams/architecture3.drawio.png)
 
-## � CI/CD Pipeline
+## CI/CD Pipeline
 
 ### **Pipeline Architecture**
 
