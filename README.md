@@ -8,7 +8,7 @@
 ## Overview
 
 **Sky High Booker** is a startup cloud-native flight booking platform built entirely on AWS serverless architecture. A complete end-to-end flight booking experience powered by modern web technologies and AWS cloud services.
-
+![diagram](diagrams/main.png)
 ### AWS-Powered Infrastructure
 
 Built on a fully serverless AWS architecture for scalability, reliability, and cost-efficiency:
@@ -75,6 +75,7 @@ Jobs:
 
 #### **2. Continuous Deployment (cd.yml)**
 ![diagram](diagrams/cd.png)
+![diagram](diagrams/cd_main.png)
 **Triggers:** Push to `dev` or `main` branches
 
 **Purpose:** Automated deployment of infrastructure and application
