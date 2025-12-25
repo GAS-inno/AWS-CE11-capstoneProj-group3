@@ -150,6 +150,53 @@ To maintain code quality and prevent unauthorized changes:
 - ✓ Require branches to be up to date
 - ✓ Include administrators in restrictions
 
+## CI/CD Requirements (GitHub Actions)
+
+Required repository secrets (Settings → Secrets and variables → Actions):
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `DISCORD_WEBHOOK_URL` (optional; Discord notifications)
+- `OPENROUTER_API_KEY` (optional; chatbot)
+- `SNYK_TOKEN` (optional; Snyk scans run with `continue-on-error`)
+
+Workflows:
+
+- CI: `.github/workflows/ci.yml`
+- CD: `.github/workflows/cd.yml`
+- Destroy (manual): `.github/workflows/terraform-destroy.yml`
+
+Environment mapping:
+
+- `dev` branch → Terraform workspace `dev`
+- `main` branch → Terraform workspace `prod`
+
+## Terraform Notes
+
+Terraform uses an S3 backend (see `terraform/provider.tf`). You need access to the configured state bucket/key or you must update the backend.
+
+After deployment, check Terraform outputs (see `terraform/output.tf`), especially:
+
+- `application_url` / `cloudfront_url`
+- `api_gateway_url`
+- `cognito_user_pool_id` / `cognito_user_pool_client_id`
+
+## Backend API Endpoints
+
+Defined in `terraform/api_gateway.tf`:
+
+- `POST /bookings`
+- `GET /bookings`
+- `GET /bookings/{id}`
+- `GET /bookings/occupied-seats`
+- `POST /chatbot`
+
+## Known Deployment Gotcha
+
+CD installs production dependencies in `lambda/bookings`, `lambda/notifications`, and `lambda/chatbot`.
+
+If `lambda/notifications/package.json` does not exist, the CD install step can fail.
+
 ## Security
 
 ### **Authentication**
