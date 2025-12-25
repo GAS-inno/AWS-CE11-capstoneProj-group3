@@ -66,11 +66,11 @@ feature/* → dev → main (production)
 
 ```yaml
 Jobs:
-  ✓ Terraform Validation  # Syntax and configuration checks
-  ✓ TFLint                # Terraform linting
-  ✓ Checkov Security Scan # Infrastructure security analysis
-  ✓ Snyk Vulnerability    # Dependency vulnerability scanning
-  ✓ Code Lint & Type Check # ESLint + TypeScript validation
+  - Terraform Validation  # Syntax and configuration checks
+  - TFLint                # Terraform linting
+  - Checkov Security Scan # Infrastructure security analysis
+  - Snyk Vulnerability    # Dependency vulnerability scanning
+  - Code Lint & Type Check # ESLint + TypeScript validation
 ```
 
 #### **2. Continuous Deployment (cd.yml)**
@@ -108,10 +108,10 @@ Deployment Flow:
    git push origin feature/booking-enhancement
 
 4. CI Pipeline runs automatically
-   ✓ Terraform validation
-   ✓ Security scans
-   ✓ Code quality checks
-   └─ Review results in PR checks
+   - Terraform validation
+   - Security scans
+   - Code quality checks
+      - Review results in PR checks
 
 5. Code review by team member
    - Review code changes
@@ -119,11 +119,11 @@ Deployment Flow:
    - Approve or request changes
 
 6. Merge PR to dev branch
-   └─ CD Pipeline deploys to development environment
-      ✓ Infrastructure updates (if any)
-      ✓ Application build
-      ✓ S3 upload
-      ✓ CloudFront invalidation
+   - CD Pipeline deploys to development environment
+      -Infrastructure updates (if any)
+      - Application build
+      - S3 upload
+      - CloudFront invalidation
 
 7. Test in development environment
    - Verify functionality
@@ -131,13 +131,13 @@ Deployment Flow:
    - User acceptance testing
 
 8. Create PR from dev → main for production release
-   └─ CI Pipeline validates production deployment
+   - CI Pipeline validates production deployment
 
 9. Merge to main after approval
-   └─ CD Pipeline deploys to production
-      ✓ Production infrastructure
-      ✓ Production application build
-      ✓ Live site update
+   - CD Pipeline deploys to production
+      - Production infrastructure
+      - Production application build
+      - Live site update
 ```
 
 ### **Branch Protection Rules**
@@ -145,10 +145,51 @@ Deployment Flow:
 To maintain code quality and prevent unauthorized changes:
 
 **`dev` & `main` branch:**
-- ✓ Require pull request reviews (1 approval minimum)
-- ✓ Require status checks to pass (CI pipeline)
-- ✓ Require branches to be up to date
-- ✓ Include administrators in restrictions
+- Require pull request reviews (1 approval minimum)
+- Require status checks to pass (CI pipeline)
+- Require branches to be up to date
+- Include administrators in restrictions
+
+## CI/CD Requirements (GitHub Actions)
+
+Required repository secrets (Settings → Secrets and variables → Actions):
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `DISCORD_WEBHOOK_URL` (optional; Discord notifications)
+- `OPENROUTER_API_KEY` (optional; chatbot)
+- `SNYK_TOKEN` (optional; Snyk scans run with `continue-on-error`)
+
+Workflows:
+
+- CI: `.github/workflows/ci.yml`
+- CD: `.github/workflows/cd.yml`
+- Destroy (manual): `.github/workflows/terraform-destroy.yml`
+
+Environment mapping:
+
+- `dev` branch → Terraform workspace `dev`
+- `main` branch → Terraform workspace `prod`
+
+## Terraform Notes
+
+Terraform uses an S3 backend (see `terraform/provider.tf`). You need access to the configured state bucket/key or you must update the backend.
+
+After deployment, check Terraform outputs (see `terraform/output.tf`), especially:
+
+- `application_url` / `cloudfront_url`
+- `api_gateway_url`
+- `cognito_user_pool_id` / `cognito_user_pool_client_id`
+
+## Backend API Endpoints
+
+Defined in `terraform/api_gateway.tf`:
+
+- `POST /bookings`
+- `GET /bookings`
+- `GET /bookings/{id}`
+- `GET /bookings/occupied-seats`
+- `POST /chatbot`
 
 ## Security
 
