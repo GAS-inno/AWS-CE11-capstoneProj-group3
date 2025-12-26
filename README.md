@@ -1,282 +1,231 @@
 # Sky High Booker
 
-🛫 **Modern Flight Booking Application** - A full-stack React application with AWS static website hosting.
+**Flight Booking Application** - A serverless React application with AWS static website hosting.
 
-[![CI/CD Pipeline](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/ci.yml/badge.svg)](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/ci.yml)
-[![Infrastructure](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/terraform.yml/badge.svg)](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/terraform.yml)
-[![Deployment](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/deploy.yml/badge.svg)](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/deploy.yml)
+[![CI Validation](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/ci.yml/badge.svg)](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/ci.yml)
+[![CD Deployment](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/cd.yml/badge.svg)](https://github.com/GAS-inno/AWS-CE11-capstoneProj-group3/actions/workflows/cd.yml)
 
-## ✨ Features
+## Overview
 
-- 🔍 **Flight Search** - Search for flights by destination, dates, and preferences
-- 📅 **Date Selection** - Interactive calendar for departure and return dates
-- 👥 **Passenger Management** - Add multiple passengers with details
-- � **Seat Selection** - Choose your preferred seats with visual seat map
-- 💳 **Secure Booking** - Complete booking process with payment integration
-- 📱 **Responsive Design** - Optimized for desktop and mobile devices
-- 🎨 **Modern UI** - Built with shadcn/ui components and Tailwind CSS
-- 🔐 **Authentication** - User registration and login with AWS Cognito
-- 📊 **Dashboard** - User dashboard to manage bookings and profile
+**Sky High Booker** is a startup cloud-native flight booking platform built entirely on AWS serverless architecture. A complete end-to-end flight booking experience powered by modern web technologies and AWS cloud services.
+![diagram](diagrams/main.png)
+### AWS-Powered Infrastructure
 
-## 🏗️ Architecture
+Built on a fully serverless AWS architecture for scalability, reliability, and cost-efficiency:
 
-![diagram](diagrams/architecture.drawio.png)
+- **AWS Cognito** - Secure user authentication and authorization with federated identity management
+- **AWS Lambda** - Serverless compute for booking APIs, chatbot proxy, and notification processing
+- **Amazon DynamoDB** - NoSQL database for flights, bookings, payments, and user profiles
+- **Amazon API Gateway** - RESTful API management with rate limiting and request validation
+- **Amazon S3 + CloudFront** - Global content delivery with edge caching for optimal performance
+- **Amazon Route 53** - DNS management and domain routing
+- **Amazon SNS** - Event-driven messaging for booking notifications
+- **Amazon SQS** - Dead Letter Queue for failed Lambda invocations
 
-## Quick Start
+### Real-Time Notifications
 
-### **🚨 New Repository Setup**
-For first-time setup or new developers:
+Integrated **Discord webhook** functionality ensures instant booking confirmations and updates are delivered to the team's Discord channel via SNS triggers. When a booking is created, an SNS notification automatically forwards the details to Discord, enabling real-time monitoring of booking activities.
 
-```bash
-git clone <repository-url>
-cd AWS-CE11-capstoneProj-group3
+### AI Chatbot Assistant
 
-# Setup infrastructure
-cd terraform
-terraform init
-terraform apply
+Intelligent chatbot integration provides:
+- Booking guidance and support
+- Quick answers to common questions
 
-# Setup frontend
-cd ..
-npm install
-npm run dev
-```
+## Architecture
 
-### **🔄 Existing Infrastructure**
-If infrastructure already exists:
+![diagram](diagrams/architecture3.drawio.png)
 
-```bash
-# Frontend development only
-npm install
-cp .env.example .env
-# Edit .env with current AWS environment variables
-npm run dev
+## CI/CD Pipeline
 
-# Or infrastructure changes
-cd terraform
-terraform apply
-```
+### **Pipeline Architecture**
 
-**⚠️ Important**: See `SETUP.md` for detailed dependency information.
+Our CI/CD pipeline is designed to support a **fast-growing startup team** with automated deployments from development through to production. The pipeline ensures rapid release cycles while maintaining code quality and stability as the team scales.
 
-## 📁 Project Structure
+### **Branching Strategy**
 
 ```
-sky-high-booker/
-├── 📁 src/                     # React application source
-│   ├── 📁 components/         # Reusable UI components
-│   │   ├── ui/               # shadcn/ui components
-│   │   ├── booking/          # Booking-specific components
-│   │   ├── flight/           # Flight search components
-│   │   └── auth/             # Authentication components
-│   ├── 📁 pages/             # Page components
-│   ├── 📁 contexts/          # React contexts (auth, booking)
-│   ├── 📁 hooks/             # Custom React hooks
-│   ├── 📁 lib/               # Utility functions
-│   └── 📁 assets/            # Static assets
-├── 📁 terraform/             # Infrastructure as Code
-│   ├── main.tf              # Core AWS resources (S3, CloudFront, VPC)
-│   ├── backend.tf           # Remote state configuration
-│   ├── provider.tf          # AWS provider setup
-│   ├── variable.tf          # Input variables
-│   └── output.tf            # Resource outputs
-├── 📁 docs/                  # Documentation
-│   ├── 📁 deployment/       # Deployment guides
-│   ├── 📁 infrastructure/   # Architecture documentation
-│   └── 📁 development/     # Development setup guides
-├── 📁 .github/workflows/     # GitHub Actions CI/CD
-│   ├── ci.yml               # Continuous Integration
-│   ├── deploy.yml           # Automated deployment
-│   ├── deploy-multi-env.yml # Multi-environment deployment
-│   └── terraform.yml        # Infrastructure management
-└── 📄 [config files]        # Various configuration files
+feature/* → dev → main (production)
+     ↓       ↓        ↓
+   Local   CI+CD   CI+CD
+  Testing  (Dev)   (Prod)
 ```
 
-## 🛠️ Technology Stack
+**Branch Structure:**
+- **`feature/*`** - Individual feature development branches
+- **`dev`** - Development environment (auto-deploy on merge)
+- **`main`** - Production environment (auto-deploy on merge)
 
-### **Frontend**
-- **React 18** with TypeScript
-- **Vite** for fast development and building
-- **Tailwind CSS** for styling
-- **shadcn/ui** for UI components
-- **Lucide React** for icons
-- **React Router** for navigation
-- **React Hook Form** for form management
+### **GitHub Actions Workflows**
 
-### **Backend & Database**
-- **AWS Lambda** (Node.js) for serverless API functions
-- **Amazon DynamoDB** for NoSQL database
-- **AWS Cognito** for user authentication
-- **API Gateway** for REST API management
+#### **1. Continuous Integration (ci.yml)**
+![diagram](diagrams/ci.png)
+**Triggers:** Pull requests to `dev` or `main` branches
 
-### **Infrastructure**
-- **Amazon S3** for static website hosting
-- **Amazon CloudFront** for CDN
-- **VPC** with public/private subnets
-- **Route 53** for DNS management
+**Purpose:** Validate code quality and infrastructure before merging
 
-### **DevOps**
-- **Terraform** for Infrastructure as Code
-- **GitHub Actions** for CI/CD
-- **AWS CLI** for deployment automation
-
-## 🚢 Deployment
-
-### **Automated Deployment (Recommended)**
-```bash
-# Push to main branch triggers automatic deployment
-git push origin main
-
-# Or manually trigger via GitHub Actions
-# Go to Actions → "Complete CI/CD Pipeline" → "Run workflow"
+```yaml
+Jobs:
+  - Terraform Validation  # Syntax and configuration checks
+  - TFLint                # Terraform linting
+  - Checkov Security Scan # Infrastructure security analysis
+  - Snyk Vulnerability    # Dependency vulnerability scanning
+  - Code Lint & Type Check # ESLint + TypeScript validation
 ```
 
-### **Manual Deployment**
-```bash
-# Deploy infrastructure only
-cd terraform/
-terraform init
-terraform apply
+#### **2. Continuous Deployment (cd.yml)**
+![diagram](diagrams/cd.png)
+![diagram](diagrams/cd_main.png)
+**Triggers:** Push to `dev` or `main` branches
 
-# Build frontend locally
-cd ..
-npm install
-npm run build
-# Upload `dist/` to your S3 bucket via AWS CLI or CI
+**Purpose:** Automated deployment of infrastructure and application
+
+```yaml
+Deployment Flow:
+  1. Terraform Plan     # Preview infrastructure changes
+  2. Terraform Apply    # Deploy AWS resources
+  3. npm install        # Install dependencies
+  4. npm run build      # Build React application
+  5. AWS S3 Sync        # Upload dist/ to S3 bucket
+  6. CloudFront Invalidate # Clear CDN cache for instant updates
 ```
 
-### **Multi-Environment Support**
-- **Staging**: Triggered on `develop` branch
-- **Production**: Triggered on `main` branch or manual approval
-- **Feature branches**: CI testing only
+**Environment-Specific Deployments:**
+- **`dev` branch** → Deploys to development environment
+- **`main` branch** → Deploys to production environment
 
-## 📚 Documentation
+### **Complete Development Workflow**
 
-Comprehensive documentation is available in the [`docs/`](./docs/) directory:
+```
+1. Developer creates feature branch
+   git checkout -b feature/booking-enhancement
 
-- 📖 **[Development Setup](./docs/development/setup.md)** - Complete development environment setup
-- 🏗️ **[Infrastructure Architecture](./docs/infrastructure/architecture.md)** - AWS infrastructure deep dive
-- 🚀 **[Deployment Guide](./docs/deployment/guide.md)** - Comprehensive deployment instructions
- 
+2. Make changes and commit locally
+   git add .
+   git commit -m "Add seat selection validation"
 
-### **Quick Links**
-- [Getting Started](./docs/development/setup.md#-quick-start)
-- [Environment Variables](./docs/development/setup.md#-environment-setup)
-- [Deployment Process](./docs/deployment/guide.md#-automated-deployment-github-actions)
-- [Troubleshooting](./docs/deployment/guide.md#-troubleshooting)
-- [Architecture Overview](./docs/infrastructure/architecture.md#-architecture-overview)
+3. Push to GitHub and create Pull Request to dev
+   git push origin feature/booking-enhancement
 
-## 🔧 Development
+4. CI Pipeline runs automatically
+   - Terraform validation
+   - Security scans
+   - Code quality checks
+      - Review results in PR checks
 
-### **Available Scripts**
-```bash
-# Development
-npm run dev              # Start development server
-npm run build           # Build for production
-npm run preview         # Preview production build locally
+5. Code review by team member
+   - Review code changes
+   - Check CI pipeline status
+   - Approve or request changes
 
-# Code Quality
-npm run lint            # ESLint checking
-npm run type-check      # TypeScript validation
-npm test               # Run tests
-npm run format         # Format with Prettier
+6. Merge PR to dev branch
+   - CD Pipeline deploys to development environment
+      -Infrastructure updates (if any)
+      - Application build
+      - S3 upload
+      - CloudFront invalidation
 
-# Deployment
-cd terraform && terraform apply   # Provision infra
-npm run build                      # Build frontend
-# Upload `dist/` to S3 (via CI or AWS CLI)
+7. Test in development environment
+   - Verify functionality
+   - Run integration tests
+   - User acceptance testing
+
+8. Create PR from dev → main for production release
+   - CI Pipeline validates production deployment
+
+9. Merge to main after approval
+   - CD Pipeline deploys to production
+      - Production infrastructure
+      - Production application build
+      - Live site update
 ```
 
-### **Key Development Commands**
-```bash
-# Setup new development environment
-npm install && npm run dev
+### **Branch Protection Rules**
 
-# Run development server with hot reload
-npm run dev
+To maintain code quality and prevent unauthorized changes:
 
-# Build and test locally
-npm run build && npm run preview
+**`dev` & `main` branch:**
+- Require pull request reviews (1 approval minimum)
+- Require status checks to pass (CI pipeline)
+- Require branches to be up to date
+- Include administrators in restrictions
 
-# Type checking and linting
-npm run type-check && npm run lint
-```
+## CI/CD Requirements (GitHub Actions)
 
-## 🧪 Testing
+Required repository secrets (Settings → Secrets and variables → Actions):
 
-```bash
-# Run all tests
-npm test
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `DISCORD_WEBHOOK_URL` (optional; Discord notifications)
+- `OPENROUTER_API_KEY` (optional; chatbot)
+- `SNYK_TOKEN` (optional; Snyk scans run with `continue-on-error`)
 
-# Run tests in watch mode
-npm run test:watch
+Workflows:
 
-# Run tests with coverage
-npm run test:coverage
+- CI: `.github/workflows/ci.yml`
+- CD: `.github/workflows/cd.yml`
+- Destroy (manual): `.github/workflows/terraform-destroy.yml`
 
-# E2E tests (if configured)
-npm run test:e2e
-```
+Environment mapping:
 
-## 🔒 Security
+- `dev` branch → Terraform workspace `dev`
+- `main` branch → Terraform workspace `prod`
 
-- **Authentication**: AWS Cognito with email/password
-- **Authorization**: IAM policies and Cognito user pools
-- **Data Protection**: HTTPS everywhere, secure headers
-- **Infrastructure**: Private subnets, security groups, IAM roles
-- **Secrets Management**: GitHub Secrets, AWS Systems Manager
+## Terraform Notes
 
-## 📊 Monitoring
+Terraform uses an S3 backend (see `terraform/provider.tf`). You need access to the configured state bucket/key or you must update the backend.
 
-- **Application Monitoring**: CloudWatch logs for Lambda functions
-- **Infrastructure Monitoring**: CloudFront, S3, and API Gateway metrics
-- **Error Tracking**: CloudWatch error logs and alarms
-- **Performance**: CDN cache hit rates and API response times
+After deployment, check Terraform outputs (see `terraform/output.tf`), especially:
 
-## 🤝 Contributing
+- `application_url` / `cloudfront_url`
+- `api_gateway_url`
+- `cognito_user_pool_id` / `cognito_user_pool_client_id`
 
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Make your changes** and test locally
-4. **Run quality checks**: `npm run lint && npm run type-check && npm test`
-5. **Commit changes**: `git commit -m 'Add amazing feature'`
-6. **Push to branch**: `git push origin feature/amazing-feature`
-7. **Create Pull Request** with detailed description
+## Backend API Endpoints
 
-### **Development Workflow**
-- Follow TypeScript strict mode
-- Use conventional commit messages
-- Add tests for new features
-- Update documentation as needed
-- Ensure CI passes before merging
+Defined in `terraform/api_gateway.tf`:
 
-## 📄 License
+- `POST /bookings`
+- `GET /bookings`
+- `GET /bookings/{id}`
+- `GET /bookings/occupied-seats`
+- `POST /chatbot`
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## Security
 
-## 👥 Team
+### **Authentication**
+- **AWS Cognito User Pool**: Email/password authentication with secure password policies and MFA support
+- **Account Verification**: Email confirmation required for new accounts
 
-- **Development Team**: CE11 Group 3
-- **Infrastructure**: AWS ECS Fargate with Terraform
-- **Frontend**: React + TypeScript + Tailwind CSS
-- **Backend**: AWS Lambda + DynamoDB + Cognito
+### **Encryption**
+- **At Rest**: AWS-managed encryption for DynamoDB, S3 (AES-256), Lambda environment variables, and CloudWatch Logs
+- **In Transit**: TLS 1.2+ enforced across all services via CloudFront and API Gateway
 
-## 🔗 Links
+### **Access Control**
+- **IAM Roles**: Least privilege access for Lambda functions (scoped to specific DynamoDB tables, SQS, SNS)
+- **S3 Bucket**: Private bucket with CloudFront Origin Access Identity (OAI) for secure content delivery
+- **API Gateway**: AWS Shield Standard DDoS protection enabled
 
-- **Live Application**: [Deployed via AWS ECS]
-- **Documentation**: [`docs/`](./docs/) directory
-- **GitHub Actions**: [Workflows](./.github/workflows/)
-- **Infrastructure**: [`terraform/`](./terraform/) directory
-- **Deployment Scripts**: [`scripts/`](./scripts/) directory
+### **CI/CD Security**
+- **Snyk**: Automated dependency vulnerability scanning
+- **Checkov**: Infrastructure security analysis on every pull request
+- **GitHub Secrets**: Secure storage of AWS credentials and API keys
 
-## 📞 Support
+## Monitoring & Observability
 
-For questions, issues, or contributions:
+### **Logging**
+- **CloudWatch Logs**: Automatic log aggregation for all Lambda functions and API Gateway
+- **Log Retention**: 7-day retention policy
+- **Log Groups**: Organized by Lambda function (booking APIs, chatbot proxy, Discord notifications)
 
-1. **Check Documentation**: Review the [`docs/`](./docs/) directory
-2. **GitHub Issues**: Create an issue for bugs or feature requests
-3. **GitHub Discussions**: Ask questions and share ideas
-4. **Pull Requests**: Contribute improvements and fixes
+### **Metrics & Performance**
+- **Lambda**: Invocation count, error rates, duration, and concurrent execution tracking (AWS default metrics)
+- **API Gateway**: Request count, 4xx/5xx error rates, and latency tracking (AWS default metrics)
+- **DynamoDB**: PAY_PER_REQUEST billing with automatic scaling, point-in-time recovery enabled
+
+### **Error Tracking**
+- **SQS Dead Letter Queue**: Captures failed Lambda invocations after 3 retry attempts
+- **AWS X-Ray**: Distributed tracing enabled for Lambda functions and API Gateway
 
 ---
 
@@ -284,46 +233,4 @@ For questions, issues, or contributions:
 
 *Built with ❤️ by CE11 Group 3*
 
-## Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
-- `npm run type-check` - Run TypeScript checks
-
-## Deployment
-
-### Frontend Deployment
-The application can be deployed to various platforms:
-- **AWS S3 + CloudFront** (recommended)
-- **Vercel**
-- **Netlify**
-
-### Infrastructure Deployment
-Use Terraform to deploy the AWS infrastructure:
-```bash
-cd terraform
-terraform init
-terraform apply
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For support and questions, please open an issue in the GitHub repository.
-
----
-
-Built with ❤️ by the CE11 Group 3 Team
+**Team Members:** Yee Fei, Saw, Jiaqing, Zaka Malik, Andy Hon

@@ -151,3 +151,41 @@ resource "aws_cloudwatch_log_group" "discord_forwarder_logs" {
 
   tags = local.tags
 }
+
+# IAM role for Chatbot Lambda function
+resource "aws_iam_role" "lambda_chatbot_role" {
+  name = "${local.prefix}-lambda-chatbot-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = local.tags
+}
+
+# Policy for Chatbot Lambda to write logs
+resource "aws_iam_role_policy_attachment" "lambda_chatbot_basic_execution" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  role       = aws_iam_role.lambda_chatbot_role.name
+}
+
+# Policy for Chatbot Lambda to send messages to SQS (DLQ)
+resource "aws_iam_role_policy_attachment" "lambda_chatbot_sqs" {
+  policy_arn = aws_iam_policy.lambda_sqs_policy.arn
+  role       = aws_iam_role.lambda_chatbot_role.name
+}
+
+# IAM Policy attachment for X-Ray write access for chatbot
+resource "aws_iam_role_policy_attachment" "lambda_chatbot_xray_write" {
+  role       = aws_iam_role.lambda_chatbot_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
+}
