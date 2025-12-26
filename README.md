@@ -1,4 +1,4 @@
-# Sky High Booker
+# Sky High Booker 
 
 **Flight Booking Application** - A serverless React application with AWS static website hosting.
 
